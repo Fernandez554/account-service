@@ -41,14 +41,15 @@
         </dependency>
         <!-- Desde Spring Boot 3 https://springdoc.org/v2/#features -->
         <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
-            <version>2.0.2</version>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+            <version>2.5.0</version> <!-- Use the latest version -->
+        </dependency>
+
         <!-- Necesario desde Spring Boot 2.3 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

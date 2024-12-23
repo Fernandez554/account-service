@@ -2,6 +2,10 @@ package com.nttbank.microservices.accountservice.controller;
 
 import com.nttbank.microservices.accountservice.model.BankAccount;
 import com.nttbank.microservices.accountservice.service.BankAccountService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +29,7 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/accounts")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Bank Account Controller", description = "Manage bank accounts")
 public class BankAccountController {
 
   private final BankAccountService service;
@@ -37,7 +42,14 @@ public class BankAccountController {
    *     {@link BankAccount}. If no accounts are found,
    *     returns a response with HTTP 204 (No Content).
    */
+
   @GetMapping
+  @Operation(summary = "Retrieve all bank accounts",
+      description = "Fetches all bank accounts as a reactive Flux.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Successfully retrieved the list of bank accounts"),
+      @ApiResponse(responseCode = "204", description = "No content available (empty list)")
+  })
   public Mono<ResponseEntity<Flux<BankAccount>>> findAll() {
     Flux<BankAccount> accountList = service.findAll();
 
@@ -53,6 +65,12 @@ public class BankAccountController {
    *     account does not exist, returns a response with HTTP 404 (Not Found).
    */
   @GetMapping("/{account_id}")
+  @Operation(summary = "Retrieve a specific bank account",
+      description = "Fetches a bank account by its unique ID.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Successfully retrieved the bank account"),
+      @ApiResponse(responseCode = "404", description = "Bank account not found")
+  })
   public Mono<ResponseEntity<BankAccount>> findById(@Valid @PathVariable("account_id") String id) {
     return service.findById(id)
         .map(c -> ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(c))
@@ -69,6 +87,12 @@ public class BankAccountController {
    *     resource with HTTP 201 (Created).
    *     If creation fails, returns a response with HTTP 404 (Not Found).
    */
+  @Operation(summary = "Create a new bank account",
+      description = "Creates a new bank account and returns the newly created resource.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "201", description = "Successfully created the bank account"),
+      @ApiResponse(responseCode = "404", description = "Creation failed")
+  })
   @PostMapping
   public Mono<ResponseEntity<BankAccount>> save(@Valid @RequestBody BankAccount account,
       final ServerHttpRequest req) {
@@ -87,6 +111,12 @@ public class BankAccountController {
    *     {@link BankAccount}. If the account does not exist, returns a response with HTTP 404 (Not
    *     Found).
    */
+  @Operation(summary = "Update an existing bank account",
+      description = "Updates a bank account by its ID and returns the updated details.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Successfully updated the bank account"),
+      @ApiResponse(responseCode = "404", description = "Bank account not found")
+  })
   @PutMapping("/{account_id}")
   public Mono<ResponseEntity<BankAccount>> update(@Valid @PathVariable("account_id") String id,
       @Valid @RequestBody BankAccount account) {
@@ -120,6 +150,12 @@ public class BankAccountController {
    *      deleted, returns HTTP 204 (No Content). If the account does not exist, returns a response
    *      with HTTP 404 (Not Found).
    */
+  @Operation(summary = "Delete a bank account",
+      description = "Deletes a bank account by its ID.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "204", description = "Successfully deleted the bank account"),
+      @ApiResponse(responseCode = "404", description = "Bank account not found")
+  })
   @DeleteMapping("/{account_id}")
   public Mono<ResponseEntity<Void>> delete(@PathVariable("account_id") String id) {
     return service.findById(id).flatMap(
