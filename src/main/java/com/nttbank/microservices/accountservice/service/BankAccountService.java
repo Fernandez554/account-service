@@ -1,12 +1,13 @@
 package com.nttbank.microservices.accountservice.service;
 
-import com.nttbank.microservices.accountservice.model.BankAccount;
+import com.nttbank.microservices.accountservice.model.entity.BankAccount;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface BankAccountService {
 
-  Mono<BankAccount> save(BankAccount t);
+  Mono<BankAccount> save(BankAccount t, ServerHttpRequest req);
 
   Mono<BankAccount> update(BankAccount t);
 
@@ -16,4 +17,5 @@ public interface BankAccountService {
 
   Mono<Void> delete(String customerId);
 
+  //Flux<BankAccount> getAccountsByCustomerIdAndType(String customerId, String accountType);
 }

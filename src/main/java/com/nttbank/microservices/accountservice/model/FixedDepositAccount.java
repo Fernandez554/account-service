@@ -1,14 +1,32 @@
 package com.nttbank.microservices.accountservice.model;
 
-public class FixedDepositAccount extends BankAccount {
-  private static final boolean OPEN_ACCOUNT_RESTRICTION_BY_PERSONAL = false;
-  private static final int MAX_ACCOUNT_BY_PERSONAL = 1;
+import com.nttbank.microservices.accountservice.action.IOpenable;
+import com.nttbank.microservices.accountservice.model.entity.BankAccount;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Transient;
 
-  private static final boolean OPEN_ACCOUNT_RESTRICTION_BY_BUSINESS = false;
-  private static final int MAX_ACCOUNT_BY_BUSINESS = 0;
+@Data
+@NoArgsConstructor
+public class FixedDepositAccount extends BankAccount implements IOpenable {
+
+  @Transient
+  public final long MAX_ACCOUNTS_BY_PERSONAL = 1;
+  @Transient
+  public final long MAX_ACCOUNTS_BY_BUSINESS = 0;
 
   public FixedDepositAccount(BankAccount account) {
-    this.setId(account.getId());
+    super(account.getId(), account.getAccountType(), account.getCustomerId(), account.getBalance(),
+        account.getMaxMonthlyTrans(), account.getMaintenanceFee(),
+        account.getAllowedWithdrawalDay(), account.getWithdrawAmountMax(), account.getLstSigners(),
+        account.getLstHolders());
+  }
+
+  @Override
+  public boolean openAccount(Long numAccounts, String customerType) {
+    return ("personal".equals(customerType) && numAccounts < MAX_ACCOUNTS_BY_PERSONAL) || (
+        "business".equals(customerType) && numAccounts < MAX_ACCOUNTS_BY_BUSINESS);
+
   }
 
 }

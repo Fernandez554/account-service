@@ -1,7 +1,11 @@
 package com.nttbank.microservices.accountservice.controller;
 
-import com.nttbank.microservices.accountservice.model.BankAccount;
+import com.nttbank.microservices.accountservice.exception.CustomerNotFoundException;
+import com.nttbank.microservices.accountservice.model.Response.BankAccountResponse;
+import com.nttbank.microservices.accountservice.model.entity.BankAccount;
 import com.nttbank.microservices.accountservice.service.BankAccountService;
+import com.nttbank.microservices.accountservice.service.CustomerService;
+import com.nttbank.microservices.accountservice.util.ResponseUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -24,6 +28,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/accounts")
@@ -32,15 +38,15 @@ import reactor.core.publisher.Mono;
 @Tag(name = "Bank Account Controller", description = "Manage bank accounts")
 public class BankAccountController {
 
-  private final BankAccountService service;
-
+  private static final Logger log = LoggerFactory.getLogger(BankAccountController.class);
+  private final BankAccountService bankAccountService;
+  private final CustomerService customerService;
 
   /**
    * Retrieves all bank accounts.
    *
    * @return A {@link Mono} containing a {@link ResponseEntity} with a {@link Flux} of
-   *     {@link BankAccount}. If no accounts are found,
-   *     returns a response with HTTP 204 (No Content).
+   * {@link BankAccount}. If no accounts are found, returns a response with HTTP 204 (No Content).
    */
 
   @GetMapping
@@ -51,7 +57,7 @@ public class BankAccountController {
       @ApiResponse(responseCode = "204", description = "No content available (empty list)")
   })
   public Mono<ResponseEntity<Flux<BankAccount>>> findAll() {
-    Flux<BankAccount> accountList = service.findAll();
+    Flux<BankAccount> accountList = bankAccountService.findAll();
 
     return Mono.just(ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(accountList))
         .defaultIfEmpty(ResponseEntity.noContent().build());
@@ -62,7 +68,7 @@ public class BankAccountController {
    *
    * @param id The ID of the bank account to retrieve.
    * @return A {@link Mono} containing a {@link ResponseEntity} with the {@link BankAccount}. If the
-   *     account does not exist, returns a response with HTTP 404 (Not Found).
+   * account does not exist, returns a response with HTTP 404 (Not Found).
    */
   @GetMapping("/{account_id}")
   @Operation(summary = "Retrieve a specific bank account",
@@ -72,7 +78,7 @@ public class BankAccountController {
       @ApiResponse(responseCode = "404", description = "Bank account not found")
   })
   public Mono<ResponseEntity<BankAccount>> findById(@Valid @PathVariable("account_id") String id) {
-    return service.findById(id)
+    return bankAccountService.findById(id)
         .map(c -> ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(c))
         .defaultIfEmpty(ResponseEntity.notFound().build());
   }
@@ -83,9 +89,8 @@ public class BankAccountController {
    * @param account The {@link BankAccount} object to create.
    * @param req     The {@link ServerHttpRequest} containing the request details.
    * @return A {@link Mono} containing a {@link ResponseEntity} with the created
-   *     {@link BankAccount}. The response includes the location of the newly created
-   *     resource with HTTP 201 (Created).
-   *     If creation fails, returns a response with HTTP 404 (Not Found).
+   * {@link BankAccount}. The response includes the location of the newly created resource with HTTP
+   * 201 (Created). If creation fails, returns a response with HTTP 404 (Not Found).
    */
   @Operation(summary = "Create a new bank account",
       description = "Creates a new bank account and returns the newly created resource.")
@@ -94,13 +99,24 @@ public class BankAccountController {
       @ApiResponse(responseCode = "404", description = "Creation failed")
   })
   @PostMapping
-  public Mono<ResponseEntity<BankAccount>> save(@Valid @RequestBody BankAccount account,
+  public Mono<ResponseEntity<BankAccount>> save(
+      @Valid @RequestBody BankAccount account,
       final ServerHttpRequest req) {
-    return service.save(account).map(c -> ResponseEntity.created(
-                URI.create(req.getURI().toString().concat("/").concat(c.getId())))
-            .contentType(MediaType.APPLICATION_JSON).body(c))
-        .defaultIfEmpty(ResponseEntity.notFound().build());
+    //return bankAccountService.save(account, req);
+    return bankAccountService.save(account, req)
+            .map(c -> ResponseEntity.created(
+                    URI.create(req.getURI().toString().concat("/").concat(c.getId())))
+                .contentType(MediaType.APPLICATION_JSON).body(c))
+            .defaultIfEmpty(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+//    return customerService.findCustomerById(account.getCustomerId())
+//        .flatMap(customer -> bankAccountService.save(account, req)
+//            .map(c -> ResponseEntity.created(
+//                    URI.create(req.getURI().toString().concat("/").concat(c.getId())))
+//                .contentType(MediaType.APPLICATION_JSON).body(c))
+//            .defaultIfEmpty(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()))
+//        .onErrorResume(e -> ResponseUtil.createNotFoundResponse(BankAccount.class));
   }
+
 
   /**
    * Updates an existing bank account by its ID.
@@ -108,8 +124,8 @@ public class BankAccountController {
    * @param id      The ID of the bank account to update.
    * @param account The {@link BankAccount} object containing updated details.
    * @return A {@link Mono} containing a {@link ResponseEntity} with the updated
-   *     {@link BankAccount}. If the account does not exist, returns a response with HTTP 404 (Not
-   *     Found).
+   * {@link BankAccount}. If the account does not exist, returns a response with HTTP 404 (Not
+   * Found).
    */
   @Operation(summary = "Update an existing bank account",
       description = "Updates a bank account by its ID and returns the updated details.")
@@ -123,23 +139,23 @@ public class BankAccountController {
     account.setId(id);
 
     Mono<BankAccount> monoBody = Mono.just(account);
-    Mono<BankAccount> monoDb = service.findById(id);
+    Mono<BankAccount> monoDb = bankAccountService.findById(id);
 
     return monoDb.zipWith(monoBody, (db, c) -> {
-      db.setId(id);
-      db.setAccountType(c.getAccountType());
-      db.setCustomerId(c.getCustomerId());
-      db.setBalance(c.getBalance());
-      db.setMaxMonthlyTrans(c.getMaxMonthlyTrans());
-      db.setMaintenanceFee(c.getMaintenanceFee());
-      db.setAllowedWithdrawalDay(c.getAllowedWithdrawalDay());
-      db.setWithdrawAmountMax(c.getWithdrawAmountMax());
-      db.setLstSigners(c.getLstSigners());
-      db.setLstHolders(c.getLstHolders());
-      return db;
-    }).flatMap(service::update)
-      .map(e -> ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(e))
-      .defaultIfEmpty(ResponseEntity.notFound().build());
+          db.setId(id);
+          db.setAccountType(c.getAccountType());
+          db.setCustomerId(c.getCustomerId());
+          db.setBalance(c.getBalance());
+          db.setMaxMonthlyTrans(c.getMaxMonthlyTrans());
+          db.setMaintenanceFee(c.getMaintenanceFee());
+          db.setAllowedWithdrawalDay(c.getAllowedWithdrawalDay());
+          db.setWithdrawAmountMax(c.getWithdrawAmountMax());
+          db.setLstSigners(c.getLstSigners());
+          db.setLstHolders(c.getLstHolders());
+          return db;
+        }).flatMap(bankAccountService::update)
+        .map(e -> ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(e))
+        .defaultIfEmpty(ResponseEntity.notFound().build());
   }
 
   /**
@@ -147,8 +163,8 @@ public class BankAccountController {
    *
    * @param id The ID of the bank account to delete.
    * @return A {@link Mono} containing a {@link ResponseEntity}. If the account is successfully
-   *      deleted, returns HTTP 204 (No Content). If the account does not exist, returns a response
-   *      with HTTP 404 (Not Found).
+   * deleted, returns HTTP 204 (No Content). If the account does not exist, returns a response with
+   * HTTP 404 (Not Found).
    */
   @Operation(summary = "Delete a bank account",
       description = "Deletes a bank account by its ID.")
@@ -158,8 +174,8 @@ public class BankAccountController {
   })
   @DeleteMapping("/{account_id}")
   public Mono<ResponseEntity<Void>> delete(@PathVariable("account_id") String id) {
-    return service.findById(id).flatMap(
-            c -> service.delete(c.getId()).thenReturn(
+    return bankAccountService.findById(id).flatMap(
+            c -> bankAccountService.delete(c.getId()).thenReturn(
                 new ResponseEntity<Void>(HttpStatus.NO_CONTENT)))
         .defaultIfEmpty(ResponseEntity.notFound().build());
   }

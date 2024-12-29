@@ -1,29 +1,17 @@
 package com.nttbank.microservices.accountservice.model;
 
-import com.nttbank.microservices.accountservice.action.IOpenable;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Transient;
 
 @Data
 @NoArgsConstructor
-public class CheckingAccount extends BankAccount implements IOpenable {
+public class PymeAccount extends BankAccount {
 
-  @Transient
-  public final long MAX_ACCOUNTS_BY_PERSONAL = 1;
-
-  public CheckingAccount(BankAccount account) {
+  public PymeAccount(BankAccount account) {
     super(account.getId(), account.getAccountType(), account.getCustomerId(), account.getBalance(),
         account.getMaxMonthlyTrans(), account.getMaintenanceFee(),
         account.getAllowedWithdrawalDay(), account.getWithdrawAmountMax(), account.getLstSigners(),
         account.getLstHolders());
   }
-
-
-  @Override
-  public boolean openAccount(Long numAccounts, String customerType) {
-    return !"personal".equals(customerType) || numAccounts < MAX_ACCOUNTS_BY_PERSONAL;
-  }
 }
-

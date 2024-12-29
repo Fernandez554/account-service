@@ -1,6 +1,8 @@
-package com.nttbank.microservices.accountservice.model;
+package com.nttbank.microservices.accountservice.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import java.math.BigDecimal;
@@ -28,15 +30,18 @@ public class BankAccount {
   @Id
   private String id;
 
-  @Pattern(regexp = "^(saving|checking|fixed)$",
-      message = "Customer type must be 'saving' or 'checking' or 'fixed'")
+  @Pattern(regexp = "^(saving|checking|fixed|vip|pyme)$",
+      message = "Account type must be 'saving' or 'checking' or 'fixed' or 'vip' or 'pyme'")
   @NotNull(message = "Account type cannot be null")
   private String accountType;
 
   @NotNull(message = "Customer Identifier cannot be null")
+  @NotEmpty(message = "Customer Identifier cannt be empty")
   private String customerId;
 
-  private BigDecimal balance;
+  @Min(value = 0, message = "Balance must be greater than or equal to 0")
+  @Builder.Default
+  private BigDecimal balance = BigDecimal.ZERO;
 
   private Integer maxMonthlyTrans;
 

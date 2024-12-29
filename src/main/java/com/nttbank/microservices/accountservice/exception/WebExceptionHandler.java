@@ -16,8 +16,10 @@ import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
@@ -48,11 +50,22 @@ public class WebExceptionHandler extends AbstractErrorWebExceptionHandler {
     if (error instanceof ConstraintViolationException violationException) {
       List<String> errors = violationException.getConstraintViolations().stream()
           .map(ConstraintViolation::getMessage).collect(Collectors.toList());
-
       return ServerResponse.status(HttpStatus.BAD_REQUEST).bodyValue(errors);
     }
+
     if (error instanceof WebExchangeBindException bindException) {
       return handleValidationErrors(bindException);
+    }
+
+    // Handle IllegalArgumentException specifically
+    if (error instanceof IllegalArgumentException) {
+      Map<String, Object> errorDetails = new HashMap<>();
+      errorDetails.put("error", "Invalid request");
+      errorDetails.put("message", error.getMessage());
+      errorDetails.put("path", request.path());
+
+      return ServerResponse.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(errorDetails);
     }
 
     Map<String, Object> errorAttributes = getErrorAttributes(request,
@@ -75,5 +88,21 @@ public class WebExceptionHandler extends AbstractErrorWebExceptionHandler {
     response.put("errors", errors);
 
     return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON).bodyValue(response);
+  }
+
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<String> handleIlegalArgumentException(IllegalArgumentException ex) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(CustomerNotFoundException.class)
+  public ResponseEntity<String> handleResourceNotFound(CustomerNotFoundException ex) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<String> handleGeneralException(Exception ex) {
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body("An error occurred: " + ex.getMessage());
   }
 }

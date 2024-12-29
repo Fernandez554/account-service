@@ -2,17 +2,23 @@ package com.nttbank.microservices.accountservice.model.Response;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+@Data
 @Getter
 @Setter
 @Builder
 @ToString
 @JsonSerialize
 @JsonDeserialize
+@AllArgsConstructor
+@NoArgsConstructor
 public class CustomerResponse {
 
   private String id;
