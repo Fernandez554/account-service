@@ -82,6 +82,9 @@ public class BankAccountServiceImpl implements BankAccountService {
           }
           return Mono.error(
               new IllegalStateException("You cannot withdraw from this account: " + b.getId()));
+        })
+        .onErrorResume(e -> {
+          return Mono.error(new IllegalStateException("Withdraw failed: " + e.getMessage(), e));
         });
   }
 
@@ -97,6 +100,9 @@ public class BankAccountServiceImpl implements BankAccountService {
           }
           return Mono.error(
               new IllegalStateException("You cannot deposit to this account: " + b.getId()));
+        })
+        .onErrorResume(e -> {
+          return Mono.error(new IllegalStateException("Deposit failed: " + e.getMessage(), e));
         });
   }
 
