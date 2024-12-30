@@ -1,4 +1,4 @@
-package com.nttbank.microservices.accountservice.model.Response;
+package com.nttbank.microservices.accountservice.model.response;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -10,6 +10,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+/**
+ * Represents a response object containing customer details.
+ * This class is used to hold and serialize customer information
+ * in the response sent to the client.
+ */
 @Data
 @Getter
 @Setter
