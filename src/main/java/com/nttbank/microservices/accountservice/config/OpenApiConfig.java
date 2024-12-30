@@ -8,9 +8,19 @@ import io.swagger.v3.oas.models.info.License;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configuration class for setting up OpenAPI documentation for the Banking System API.
+ * This configures the basic metadata and external documentation
+ * for the API using Spring doc OpenAPI.
+ */
 @Configuration
 public class OpenApiConfig {
 
+  /**
+   * Creates and configures the OpenAPI bean to provide API metadata.
+   *
+   * @return the configured {@link OpenAPI} instance.
+   */
   @Bean
   public OpenAPI customOpenAPI() {
     return new OpenAPI()

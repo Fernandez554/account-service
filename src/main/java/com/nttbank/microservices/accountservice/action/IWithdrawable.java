@@ -1,9 +1,16 @@
 package com.nttbank.microservices.accountservice.action;
 
-import com.nttbank.microservices.accountservice.model.entity.BankAccount;
 import java.math.BigDecimal;
-import reactor.core.publisher.Mono;
 
+/**
+ * A functional interface that defines a method for withdrawing money from a bank account.
+ * Implementations of this interface should provide the logic to withdraw a specified amount
+ * from the account.
+ * This interface is intended for use in scenarios where withdrawing money from an account
+ * is required.
+ */
+@FunctionalInterface
 public interface IWithdrawable {
-  Mono<BankAccount> withdraw(String accountId, BigDecimal amount);
+
+  void withdraw(BigDecimal amount);
 }

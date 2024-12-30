@@ -16,10 +16,8 @@ import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
@@ -28,6 +26,13 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
+/**
+ * A custom exception handler for handling various types of errors in a reactive
+ * Spring WebFlux application.
+ * It extends the {@link AbstractErrorWebExceptionHandler} to provide custom error handling
+ * logic for validation errors, illegal arguments, and other exceptions, formatting the errors
+ * in a consistent response format.
+ */
 @Component
 @Order(-1)
 public class WebExceptionHandler extends AbstractErrorWebExceptionHandler {
@@ -57,8 +62,7 @@ public class WebExceptionHandler extends AbstractErrorWebExceptionHandler {
       return handleValidationErrors(bindException);
     }
 
-    // Handle IllegalArgumentException specifically
-    if (error instanceof IllegalArgumentException) {
+    if (error instanceof IllegalArgumentException || error instanceof IllegalStateException) {
       Map<String, Object> errorDetails = new HashMap<>();
       errorDetails.put("error", "Invalid request");
       errorDetails.put("message", error.getMessage());
@@ -90,19 +94,4 @@ public class WebExceptionHandler extends AbstractErrorWebExceptionHandler {
     return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON).bodyValue(response);
   }
 
-  @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<String> handleIlegalArgumentException(IllegalArgumentException ex) {
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
-  }
-
-  @ExceptionHandler(CustomerNotFoundException.class)
-  public ResponseEntity<String> handleResourceNotFound(CustomerNotFoundException ex) {
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-  }
-
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<String> handleGeneralException(Exception ex) {
-    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .body("An error occurred: " + ex.getMessage());
-  }
 }

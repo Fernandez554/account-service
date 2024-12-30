@@ -1,13 +1,21 @@
 package com.nttbank.microservices.accountservice.util;
 
-import com.nttbank.microservices.accountservice.model.Response.BankAccountResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+/**
+ * Utility class for creating various types of responses for HTTP requests.
+ * This class provides static methods for creating {@link ResponseEntity} objects with
+ * different HTTP status codes, including success, error, and not found responses.
+ *
+ * <p>By using these utility methods, you can easily create and return common response types
+ * in a reactive programming environment with {@link Mono}.</p>
+ */
 @Component
 public class ResponseUtil {
+
   // General error response creator with status and type information
   public static <T> Mono<ResponseEntity<T>> createErrorResponse(HttpStatus status, Class<T> clazz) {
     return Mono.just(ResponseEntity.status(status).body(null));
