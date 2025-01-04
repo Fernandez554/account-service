@@ -1,9 +1,9 @@
 package com.nttbank.microservices.accountservice;
 
 import com.nttbank.microservices.accountservice.controller.BankAccountController;
+import com.nttbank.microservices.accountservice.mapper.BankAccountMapper;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
 import com.nttbank.microservices.accountservice.service.BankAccountService;
-import com.nttbank.microservices.accountservice.service.CustomerService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,9 +20,7 @@ public class BankAccountControllerTest {
 
   @Mock
   private BankAccountService bankAccountService;
-
-  @Mock
-  private CustomerService customerService;
+  private BankAccountMapper bankAccountMapper;
 
   WebTestClient client;
 
@@ -30,7 +28,8 @@ public class BankAccountControllerTest {
 
   @BeforeEach
   void setUp() {
-    client = WebTestClient.bindToController(new BankAccountController(bankAccountService, customerService)).build();
+    client = WebTestClient.bindToController(
+        new BankAccountController(bankAccountService, bankAccountMapper)).build();
   }
 
   @Test
@@ -61,7 +60,7 @@ public class BankAccountControllerTest {
   @Test
   void findById_ShouldReturnBankAccount() {
 
-    String accountId= "1234";
+    String accountId = "1234";
     BankAccount account = new BankAccount();
     account.setId(accountId);
     Mockito.when(bankAccountService.findById(account.getId())).thenReturn(Mono.just(account));

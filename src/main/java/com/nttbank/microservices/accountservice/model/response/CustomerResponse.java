@@ -28,6 +28,7 @@ public class CustomerResponse {
 
   private String id;
   private String type;
+  private String profile;
   private String name;
   private String phone;
   private String email;
