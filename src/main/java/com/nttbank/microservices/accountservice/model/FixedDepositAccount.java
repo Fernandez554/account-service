@@ -3,32 +3,29 @@ package com.nttbank.microservices.accountservice.model;
 import com.nttbank.microservices.accountservice.action.IOpenable;
 import com.nttbank.microservices.accountservice.action.IWithdrawable;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
+import com.nttbank.microservices.accountservice.util.Constants;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
+import java.util.Optional;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Transient;
 
 /**
  * Fixed Deposit Account class, extending {@link BankAccount}, and implementing {@link IOpenable}
- * and {@link IWithdrawable}.
- * This account type has restrictions based on customer type (personal or business)
- * and a fixed deposit nature. It also provides functionality for withdrawing from the account.
+ * and {@link IWithdrawable}. This account type has restrictions based on customer type (personal or
+ * business) and a fixed deposit nature. It also provides functionality for withdrawing from the
+ * account.
  */
 @EqualsAndHashCode(callSuper = false)
 @Data
 @NoArgsConstructor
 public class FixedDepositAccount extends BankAccount implements IOpenable, IWithdrawable {
 
-  @Transient
-  public final long maxAccountsByPersonal = 1;
-  @Transient
-  public final long maxAccountsByBusiness = 0;
-
   /**
-   * Constructs a new {@link FixedDepositAccount} with the specified base
-   * {@link BankAccount} details.
+   * Constructs a new {@link FixedDepositAccount} with the specified base {@link BankAccount}
+   * details.
    *
    * @param account the base {@link BankAccount} from which details are copied.
    */
@@ -40,9 +37,17 @@ public class FixedDepositAccount extends BankAccount implements IOpenable, IWith
   }
 
   @Override
-  public boolean openAccount(Long numAccounts, String customerType) {
-    return ("personal".equals(customerType) && numAccounts < maxAccountsByPersonal) || (
-        "business".equals(customerType) && numAccounts < maxAccountsByBusiness);
+  public void openAccount(Long numAccounts, String customerType) {
+    Map<String, Long> accountLimits = Map.of(
+        "personal", Constants.ONE,
+        "business", Constants.ZERO
+    );
+
+    // Validate the customer type and the number of accounts
+    Optional.ofNullable(accountLimits.get(customerType))
+        .filter(limit -> numAccounts < limit)
+        .orElseThrow(() -> new IllegalArgumentException(
+            String.format(Constants.OPENING_ACCOUNT_RESTRICTION, this.getAccountType())));
 
   }
 
@@ -52,8 +57,7 @@ public class FixedDepositAccount extends BankAccount implements IOpenable, IWith
     actualBalance = actualBalance.subtract(amount).setScale(2, RoundingMode.HALF_DOWN);
     if (actualBalance.compareTo(BigDecimal.ZERO) < 0) {
       throw new IllegalArgumentException(
-          "Account balance " + this.getId()
-              + " doesn't have the enough funds to cover the withdraw");
+          String.format(Constants.NO_WITHDRAW_FUNDS_AVAILABLE, this.getId()));
     } else {
       this.setBalance(actualBalance);
     }

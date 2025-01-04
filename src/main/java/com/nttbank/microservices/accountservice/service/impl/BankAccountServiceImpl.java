@@ -5,49 +5,78 @@ import com.nttbank.microservices.accountservice.action.IOpenable;
 import com.nttbank.microservices.accountservice.action.IWithdrawable;
 import com.nttbank.microservices.accountservice.factory.BackAccountFactory;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
-import com.nttbank.microservices.accountservice.model.response.CustomerResponse;
 import com.nttbank.microservices.accountservice.model.response.TransferResponse;
 import com.nttbank.microservices.accountservice.repo.IBankAccountRepo;
 import com.nttbank.microservices.accountservice.service.BankAccountService;
+import com.nttbank.microservices.accountservice.service.CreditCardService;
 import com.nttbank.microservices.accountservice.service.CustomerService;
+import com.nttbank.microservices.accountservice.util.Constants;
 import java.math.BigDecimal;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * Implementation of {@link BankAccountService} to handle business logic for bank accounts.
- * This service interacts with the {@link IBankAccountRepo}
- * repository and the {@link CustomerService}.
+ * Implementation of {@link BankAccountService} to handle business logic for bank accounts. This
+ * service interacts with the {@link IBankAccountRepo} repository and the {@link CustomerService}.
  */
 @Service
 @RequiredArgsConstructor
 public class BankAccountServiceImpl implements BankAccountService {
 
+  private static final Logger logger = LoggerFactory.getLogger(BankAccountServiceImpl.class);
   private final IBankAccountRepo repo;
   private final CustomerService customerService;
+  private final CreditCardService creditCardService;
 
   @Override
   public Mono<BankAccount> save(BankAccount account) {
-    Mono<CustomerResponse> customer = customerService.findCustomerById(account.getCustomerId());
-    Mono<BankAccount> bankAccount = Mono.just(
-        BackAccountFactory.createAccount(account.getAccountType(), account));
 
-    return customer.flatMap(c -> bankAccount.flatMap(
-        b -> repo.findByCustomerIdAndAccountType(c.getId(), b.getAccountType()).count()
-            .flatMap(totalAccounts -> {
-              if (b instanceof IOpenable) {
-                if (((IOpenable) b).openAccount(totalAccounts, c.getType())) {
-                  return repo.save(b);
-                }
-                return Mono.error(new IllegalArgumentException(
-                    "Customer type :" + c.getType() + " cannot open an account of type"
-                        + b.getAccountType()));
-              }
-              return Mono.error(new IllegalStateException(
-                  "You cannot open an account of type " + b.getAccountType()));
-            })));
+    return customerService.findCustomerById(account.getCustomerId())
+        .flatMap(customer -> {
+          BankAccount bankAccount = BackAccountFactory.createAccount(account.getAccountType(),
+              account);
+          if (!(bankAccount instanceof IOpenable)) {
+            logger.error(Constants.INVALID_ACCOUNT_TYPE);
+            return Mono.error(
+                new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    Constants.INVALID_ACCOUNT_TYPE));
+          }
+          return hasLeastOneCreditCard(bankAccount, customer.getProfile())
+              .flatMap(b ->
+                  repo.countByCustomerIdAndAccountType(customer.getId(),
+                      bankAccount.getAccountType())
+              ).flatMap(totalAccounts -> {
+                ((IOpenable) bankAccount).openAccount(totalAccounts, customer.getType());
+                return repo.save(bankAccount);
+              });
+        });
+  }
+
+  private Mono<BankAccount> hasLeastOneCreditCard(BankAccount bankAccount, String customerProfile) {
+    Map<String, Boolean> accountProfileMap =
+        Map.of("saving:vip", true, "checking:pyme", true);
+    if (accountProfileMap.get(bankAccount.getAccountType() + ":" + customerProfile) == null) {
+      return Mono.just(bankAccount);
+    }
+    logger.info("Calling creditCardService.totalActiveCreditsByCustomer for customer {}",
+        bankAccount.getCustomerId());
+    return creditCardService.totalActiveCreditsByCustomer(bankAccount.getCustomerId(), "Active")
+        .flatMap(totalActiveCredits -> {
+          logger.info("Total active credit cards for customer: {}", totalActiveCredits);
+          if (totalActiveCredits == 0) {
+            logger.info(Constants.NO_ACTIVE_CREDIT_CARDS);
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                Constants.NO_ACTIVE_CREDIT_CARDS));
+          }
+          return Mono.just(bankAccount);
+        });
   }
 
   @Override
@@ -82,8 +111,7 @@ public class BankAccountServiceImpl implements BankAccountService {
           }
           return Mono.error(
               new IllegalStateException("You cannot withdraw from this account: " + b.getId()));
-        })
-        .onErrorResume(e -> {
+        }).onErrorResume(e -> {
           return Mono.error(new IllegalStateException("Withdraw failed: " + e.getMessage(), e));
         });
   }
@@ -100,8 +128,7 @@ public class BankAccountServiceImpl implements BankAccountService {
           }
           return Mono.error(
               new IllegalStateException("You cannot deposit to this account: " + b.getId()));
-        })
-        .onErrorResume(e -> {
+        }).onErrorResume(e -> {
           return Mono.error(new IllegalStateException("Deposit failed: " + e.getMessage(), e));
         });
   }
@@ -109,11 +136,8 @@ public class BankAccountServiceImpl implements BankAccountService {
   @Override
   public Mono<TransferResponse> transfer(String fromAccountId, String toAccountId,
       BigDecimal amount) {
-    return withdraw(fromAccountId, amount)
-        .flatMap(fromAccount -> deposit(toAccountId, amount)
-            .map(toAccount -> new TransferResponse(fromAccountId, toAccountId, amount)))
-        .onErrorResume(e -> {
-          return Mono.error(new IllegalStateException("Transfer failed: " + e.getMessage(), e));
-        });
+    return withdraw(fromAccountId, amount).flatMap(fromAccount -> deposit(toAccountId, amount).map(
+        toAccount -> new TransferResponse(fromAccountId, toAccountId, amount))).onErrorResume(
+        e -> Mono.error(new IllegalStateException("Transfer failed: " + e.getMessage(), e)));
   }
 }

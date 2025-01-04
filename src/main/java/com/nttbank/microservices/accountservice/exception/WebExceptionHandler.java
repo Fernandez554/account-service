@@ -1,12 +1,10 @@
 package com.nttbank.microservices.accountservice.exception;
 
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
+import feign.FeignException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.springframework.boot.autoconfigure.web.WebProperties;
 import org.springframework.boot.autoconfigure.web.reactive.error.AbstractErrorWebExceptionHandler;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
@@ -24,14 +22,14 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 /**
- * A custom exception handler for handling various types of errors in a reactive
- * Spring WebFlux application.
- * It extends the {@link AbstractErrorWebExceptionHandler} to provide custom error handling
- * logic for validation errors, illegal arguments, and other exceptions, formatting the errors
- * in a consistent response format.
+ * A custom exception handler for handling various types of errors in a reactive Spring WebFlux
+ * application. It extends the {@link AbstractErrorWebExceptionHandler} to provide custom error
+ * handling logic for validation errors, illegal arguments, and other exceptions, formatting the
+ * errors in a consistent response format.
  */
 @Component
 @Order(-1)
@@ -52,12 +50,6 @@ public class WebExceptionHandler extends AbstractErrorWebExceptionHandler {
   private Mono<ServerResponse> renderErrorResponse(ServerRequest request) {
     Throwable error = getError(request);
 
-    if (error instanceof ConstraintViolationException violationException) {
-      List<String> errors = violationException.getConstraintViolations().stream()
-          .map(ConstraintViolation::getMessage).collect(Collectors.toList());
-      return ServerResponse.status(HttpStatus.BAD_REQUEST).bodyValue(errors);
-    }
-
     if (error instanceof WebExchangeBindException bindException) {
       return handleValidationErrors(bindException);
     }
@@ -72,6 +64,25 @@ public class WebExceptionHandler extends AbstractErrorWebExceptionHandler {
           .bodyValue(errorDetails);
     }
 
+    if (error instanceof ResponseStatusException responseStatusException) {
+      Map<String, Object> errorDetails = new HashMap<>();
+      errorDetails.put("error", "Invalid request");
+      errorDetails.put("message", responseStatusException.getReason());
+      errorDetails.put("path", request.path());
+      return ServerResponse.status(responseStatusException.getStatusCode())
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(errorDetails);
+    }
+
+    if (error instanceof FeignException.NotFound) {
+      Map<String, Object> errorAttributes = new HashMap<>();
+      errorAttributes.put("status", HttpStatus.NOT_FOUND.value());
+      errorAttributes.put("error", "Resource Not Found");
+      errorAttributes.put("message", "Customer not found.");
+      return ServerResponse.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(errorAttributes);
+    }
+
     Map<String, Object> errorAttributes = getErrorAttributes(request,
         ErrorAttributeOptions.defaults());
     int statusCode = (int) errorAttributes.getOrDefault("status", 500);
@@ -83,7 +94,7 @@ public class WebExceptionHandler extends AbstractErrorWebExceptionHandler {
 
   private Mono<ServerResponse> handleValidationErrors(WebExchangeBindException bindException) {
     List<String> errors = bindException.getFieldErrors().stream()
-        .map(DefaultMessageSourceResolvable::getDefaultMessage).collect(Collectors.toList());
+        .map(DefaultMessageSourceResolvable::getDefaultMessage).toList();
 
     Map<String, Object> response = new HashMap<>();
     response.put("status", 400);

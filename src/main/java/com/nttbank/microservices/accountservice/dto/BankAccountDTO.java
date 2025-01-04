@@ -1,6 +1,5 @@
-package com.nttbank.microservices.accountservice.model.entity;
+package com.nttbank.microservices.accountservice.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -12,10 +11,7 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
  * Represents a bank account with various attributes including account type, customer ID, balance,
@@ -23,20 +19,15 @@ import org.springframework.data.mongodb.core.mapping.Document;
  * collection in the MongoDB database.
  */
 @Data
-@Document(collection = "accounts")
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @Builder
-public class BankAccount {
+public class BankAccountDTO {
 
-  @EqualsAndHashCode.Include
-  @Id
   private String id;
 
   @Pattern(regexp = "^(saving|checking|fixed)$",
-      message = "Account type must be 'saving' or 'checking' or 'fixed'")
+      message = "Account type must be 'saving', 'checking', or 'fixed'")
   @NotNull(message = "Account type cannot be null")
   private String accountType;
 
@@ -45,14 +36,12 @@ public class BankAccount {
   private String customerId;
 
   @Min(value = 0, message = "Balance must be greater than or equal to 0")
-  @Builder.Default
-  private BigDecimal balance = BigDecimal.ZERO;
+  private BigDecimal balance;
 
-  @Min(value = 0, message = "Max. Monthly transactions by account cannot be  lower or equal to 0")
+  @Min(value = 0, message = "Max. Monthly transactions by account cannot be lower or equal to 0")
   private Integer maxMonthlyTrans;
 
-  @Builder.Default
-  private BigDecimal maintenanceFee = BigDecimal.ZERO;
+  private BigDecimal maintenanceFee;
 
   private LocalDate allowedWithdrawalDay;
 
@@ -62,7 +51,5 @@ public class BankAccount {
 
   private List<String> lstHolders;
 
-  @Builder.Default
-  private LocalDateTime creationDate = LocalDateTime.now();
-
+  private LocalDateTime creationDate;
 }

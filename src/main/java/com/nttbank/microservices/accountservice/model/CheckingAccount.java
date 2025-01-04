@@ -4,12 +4,14 @@ import com.nttbank.microservices.accountservice.action.IDepositable;
 import com.nttbank.microservices.accountservice.action.IOpenable;
 import com.nttbank.microservices.accountservice.action.IWithdrawable;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
+import com.nttbank.microservices.accountservice.util.Constants;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
+import java.util.Optional;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Transient;
 
 /**
  * Represents a checking account in the banking system. This class extends {@link BankAccount} and
@@ -20,9 +22,6 @@ import org.springframework.data.annotation.Transient;
 @Data
 @NoArgsConstructor
 public class CheckingAccount extends BankAccount implements IOpenable, IWithdrawable, IDepositable {
-
-  @Transient
-  public final long maxAccountsByPersonal = 1;
 
   /**
    * Constructs a new CheckingAccount using the provided {@link BankAccount}.
@@ -38,9 +37,11 @@ public class CheckingAccount extends BankAccount implements IOpenable, IWithdraw
 
 
   @Override
-  public boolean openAccount(Long numAccounts, String customerType) {
-    //TODO: Validar que comision por mantenimiento no sea 0.
-    return !"personal".equals(customerType) || numAccounts < maxAccountsByPersonal;
+  public void openAccount(Long numAccounts, String customerType) {
+    Map<String, Long> accountLimits = Map.of("personal", Constants.ONE);
+    Optional.ofNullable(accountLimits.get(customerType)).filter(limit -> numAccounts < limit)
+        .orElseThrow(() -> new IllegalArgumentException(
+            String.format(Constants.OPENING_ACCOUNT_RESTRICTION, this.getAccountType())));
   }
 
   @Override
@@ -49,8 +50,7 @@ public class CheckingAccount extends BankAccount implements IOpenable, IWithdraw
     actualBalance = actualBalance.subtract(amount).setScale(2, RoundingMode.HALF_UP);
     if (actualBalance.compareTo(BigDecimal.ZERO) < 0) {
       throw new IllegalArgumentException(
-          "Account balance " + this.getId()
-              + " doesn't have the enough funds to cover the withdraw");
+          String.format(Constants.NO_WITHDRAW_FUNDS_AVAILABLE, this.getId()));
     } else {
       this.setBalance(actualBalance);
     }

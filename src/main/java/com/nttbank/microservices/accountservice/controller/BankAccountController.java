@@ -1,9 +1,10 @@
 package com.nttbank.microservices.accountservice.controller;
 
+import com.nttbank.microservices.accountservice.dto.BankAccountDTO;
+import com.nttbank.microservices.accountservice.mapper.BankAccountMapper;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
 import com.nttbank.microservices.accountservice.model.response.TransferResponse;
 import com.nttbank.microservices.accountservice.service.BankAccountService;
-import com.nttbank.microservices.accountservice.service.CustomerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,8 +16,6 @@ import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,8 +37,8 @@ import reactor.core.publisher.Mono;
  * REST Controller for managing bank accounts.
  *
  * <p>
- * Provides endpoints for retrieving, creating, updating, deleting, and performing operations
- * on bank accounts such as withdrawals, deposits, and transfers.
+ * Provides endpoints for retrieving, creating, updating, deleting, and performing operations on
+ * bank accounts such as withdrawals, deposits, and transfers.
  * </p>
  */
 @RestController
@@ -49,15 +48,14 @@ import reactor.core.publisher.Mono;
 @Tag(name = "Bank Account Controller", description = "Manage bank accounts")
 public class BankAccountController {
 
-  private static final Logger log = LoggerFactory.getLogger(BankAccountController.class);
   private final BankAccountService bankAccountService;
-  private final CustomerService customerService;
+  private final BankAccountMapper bankAccountMapper;
 
   /**
    * Retrieves all bank accounts.
    *
-   * @return a {@link Mono} containing a {@link ResponseEntity} with a {@link Flux}
-   *     of all {@link BankAccount}.
+   * @return a {@link Mono} containing a {@link ResponseEntity} with a {@link Flux} of all
+   * {@link BankAccount}.
    */
   @Operation(summary = "Retrieve all bank accounts",
       description = "Fetches a list of all bank accounts.")
@@ -78,8 +76,8 @@ public class BankAccountController {
    * Retrieves a bank account by its ID.
    *
    * @param id the unique identifier of the bank account.
-   * @return a {@link Mono} containing a {@link ResponseEntity} with the
-   *     {@link BankAccount}, or a 404 if not found.
+   * @return a {@link Mono} containing a {@link ResponseEntity} with the {@link BankAccount}, or a
+   * 404 if not found.
    */
   @Operation(summary = "Retrieve a bank account by ID",
       description = "Fetches a bank account using its unique ID.")
@@ -98,10 +96,10 @@ public class BankAccountController {
   /**
    * Creates a new bank account.
    *
-   * @param account the bank account to create.
-   * @param req     the HTTP request to generate the location URI.
-   * @return a {@link Mono} containing a {@link ResponseEntity}
-   *     with the created {@link BankAccount}.
+   * @param bankAccountDTO the bank account to create.
+   * @param req            the HTTP request to generate the location URI.
+   * @return a {@link Mono} containing a {@link ResponseEntity} with the created
+   * {@link BankAccount}.
    */
   @Operation(summary = "Create a new bank account",
       description = "Adds a new bank account.")
@@ -111,9 +109,10 @@ public class BankAccountController {
       @ApiResponse(responseCode = "401", description = "Unauthorized action")
   })
   @PostMapping
-  public Mono<ResponseEntity<BankAccount>> save(@Valid @RequestBody BankAccount account,
+  public Mono<ResponseEntity<BankAccount>> save(@Valid @RequestBody BankAccountDTO bankAccountDTO,
       final ServerHttpRequest req) {
-    return bankAccountService.save(account).map(c -> ResponseEntity.created(
+    return bankAccountService.save(bankAccountMapper.accountDtoToAccount(bankAccountDTO))
+        .map(c -> ResponseEntity.created(
                 URI.create(req.getURI().toString().concat("/").concat(c.getId())))
             .contentType(MediaType.APPLICATION_JSON).body(c))
         .defaultIfEmpty(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
@@ -122,10 +121,10 @@ public class BankAccountController {
   /**
    * Updates an existing bank account.
    *
-   * @param id      the ID of the account to update.
-   * @param account the updated account details.
-   * @return a {@link Mono} containing a {@link ResponseEntity}
-   *     with the updated {@link BankAccount}.
+   * @param id             the ID of the account to update.
+   * @param bankAccountDTO the updated account details.
+   * @return a {@link Mono} containing a {@link ResponseEntity} with the updated
+   * {@link BankAccount}.
    */
   @Operation(summary = "Update an existing bank account",
       description = "Updates the details of an existing bank account.")
@@ -136,35 +135,35 @@ public class BankAccountController {
   })
   @PutMapping("/{account_id}")
   public Mono<ResponseEntity<BankAccount>> update(@Valid @PathVariable("account_id") String id,
-      @Valid @RequestBody BankAccount account) {
-    account.setId(id);
+      @Valid @RequestBody BankAccountDTO bankAccountDTO) {
+    bankAccountDTO.setId(id);
 
-    Mono<BankAccount> monoBody = Mono.just(account);
+    Mono<BankAccount> monoBody = Mono.just(bankAccountMapper.accountDtoToAccount(bankAccountDTO));
     Mono<BankAccount> monoDb = bankAccountService.findById(id);
 
     return monoDb.zipWith(monoBody, (db, c) -> {
-      db.setId(id);
-      db.setAccountType(c.getAccountType());
-      db.setCustomerId(c.getCustomerId());
-      db.setBalance(c.getBalance());
-      db.setMaxMonthlyTrans(c.getMaxMonthlyTrans());
-      db.setMaintenanceFee(c.getMaintenanceFee());
-      db.setAllowedWithdrawalDay(c.getAllowedWithdrawalDay());
-      db.setWithdrawAmountMax(c.getWithdrawAmountMax());
-      db.setLstSigners(c.getLstSigners());
-      db.setLstHolders(c.getLstHolders());
-      return db;
-    }).flatMap(bankAccountService::update)
-      .map(e -> ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(e))
-      .defaultIfEmpty(ResponseEntity.notFound().build());
+          db.setId(id);
+          db.setAccountType(c.getAccountType());
+          db.setCustomerId(c.getCustomerId());
+          db.setBalance(c.getBalance());
+          db.setMaxMonthlyTrans(c.getMaxMonthlyTrans());
+          db.setMaintenanceFee(c.getMaintenanceFee());
+          db.setAllowedWithdrawalDay(c.getAllowedWithdrawalDay());
+          db.setWithdrawAmountMax(c.getWithdrawAmountMax());
+          db.setLstSigners(c.getLstSigners());
+          db.setLstHolders(c.getLstHolders());
+          return db;
+        }).flatMap(bankAccountService::update)
+        .map(e -> ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(e))
+        .defaultIfEmpty(ResponseEntity.notFound().build());
   }
 
   /**
    * Deletes a bank account by ID.
    *
    * @param id the ID of the account to delete.
-   * @return a {@link Mono} containing a {@link ResponseEntity}
-   *     with status code 204 if successful, or 404 if not found.
+   * @return a {@link Mono} containing a {@link ResponseEntity} with status code 204 if successful,
+   * or 404 if not found.
    */
   @Operation(summary = "Delete a bank account",
       description = "Deletes a bank account using its ID.")
@@ -185,8 +184,8 @@ public class BankAccountController {
    *
    * @param accountId the ID of the account to withdraw from.
    * @param amount    the amount to withdraw.
-   * @return a {@link Mono} containing a {@link ResponseEntity}
-   *     with the updated {@link BankAccount}.
+   * @return a {@link Mono} containing a {@link ResponseEntity} with the updated
+   * {@link BankAccount}.
    */
   @Operation(summary = "Withdraw from a bank account",
       description = "Withdraws an amount from the specified account.")
@@ -211,8 +210,8 @@ public class BankAccountController {
    *
    * @param accountId the ID of the account to deposit into.
    * @param amount    the amount to deposit.
-   * @return a {@link Mono} containing a {@link ResponseEntity}
-   *     with the updated {@link BankAccount}.
+   * @return a {@link Mono} containing a {@link ResponseEntity} with the updated
+   * {@link BankAccount}.
    */
   @Operation(summary = "Deposit into a bank account",
       description = "Deposits an amount into the specified account.")
