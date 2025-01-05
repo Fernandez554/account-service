@@ -29,5 +29,4 @@ public interface BankAccountService {
 
   Mono<TransferResponse> transfer(String fromAccountId, String toAccountId, BigDecimal amount);
 
-  //Flux<BankAccount> getAccountsByCustomerIdAndType(String customerId, String accountType);
 }

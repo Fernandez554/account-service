@@ -17,6 +17,9 @@ import java.util.function.UnaryOperator;
  */
 public class BackAccountFactory {
 
+  private BackAccountFactory() {
+  }
+
   /**
    * A map of account types to functions that create the respective account instances.
    */

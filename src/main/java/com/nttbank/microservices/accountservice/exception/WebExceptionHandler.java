@@ -1,6 +1,11 @@
 package com.nttbank.microservices.accountservice.exception;
 
 
+import static com.nttbank.microservices.accountservice.util.Constants.ERROR_KEY;
+import static com.nttbank.microservices.accountservice.util.Constants.MESSAGE_KEY;
+import static com.nttbank.microservices.accountservice.util.Constants.PATH_KEY;
+import static com.nttbank.microservices.accountservice.util.Constants.STATUS_KEY;
+
 import feign.FeignException;
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +49,7 @@ public class WebExceptionHandler extends AbstractErrorWebExceptionHandler {
   @Override
   protected RouterFunction<ServerResponse> getRoutingFunction(ErrorAttributes errorAttributes) {
     return RouterFunctions.route(RequestPredicates.all(),
-        this::renderErrorResponse); //req -> this.renderErrorResponse(req)
+        this::renderErrorResponse);
   }
 
   private Mono<ServerResponse> renderErrorResponse(ServerRequest request) {
@@ -56,9 +61,9 @@ public class WebExceptionHandler extends AbstractErrorWebExceptionHandler {
 
     if (error instanceof IllegalArgumentException || error instanceof IllegalStateException) {
       Map<String, Object> errorDetails = new HashMap<>();
-      errorDetails.put("error", "Invalid request");
-      errorDetails.put("message", error.getMessage());
-      errorDetails.put("path", request.path());
+      errorDetails.put(ERROR_KEY, "Invalid request");
+      errorDetails.put(MESSAGE_KEY, error.getMessage());
+      errorDetails.put(PATH_KEY, request.path());
 
       return ServerResponse.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON)
           .bodyValue(errorDetails);
@@ -66,9 +71,9 @@ public class WebExceptionHandler extends AbstractErrorWebExceptionHandler {
 
     if (error instanceof ResponseStatusException responseStatusException) {
       Map<String, Object> errorDetails = new HashMap<>();
-      errorDetails.put("error", "Invalid request");
-      errorDetails.put("message", responseStatusException.getReason());
-      errorDetails.put("path", request.path());
+      errorDetails.put(ERROR_KEY, "Invalid request");
+      errorDetails.put(MESSAGE_KEY, responseStatusException.getReason());
+      errorDetails.put(PATH_KEY, request.path());
       return ServerResponse.status(responseStatusException.getStatusCode())
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(errorDetails);
@@ -76,16 +81,16 @@ public class WebExceptionHandler extends AbstractErrorWebExceptionHandler {
 
     if (error instanceof FeignException.NotFound) {
       Map<String, Object> errorAttributes = new HashMap<>();
-      errorAttributes.put("status", HttpStatus.NOT_FOUND.value());
-      errorAttributes.put("error", "Resource Not Found");
-      errorAttributes.put("message", "Customer not found.");
+      errorAttributes.put(STATUS_KEY, HttpStatus.NOT_FOUND.value());
+      errorAttributes.put(ERROR_KEY, "Resource Not Found");
+      errorAttributes.put(MESSAGE_KEY, "Customer not found.");
       return ServerResponse.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON)
           .bodyValue(errorAttributes);
     }
 
     Map<String, Object> errorAttributes = getErrorAttributes(request,
         ErrorAttributeOptions.defaults());
-    int statusCode = (int) errorAttributes.getOrDefault("status", 500);
+    int statusCode = (int) errorAttributes.getOrDefault(STATUS_KEY, 500);
 
     return ServerResponse.status(statusCode).contentType(MediaType.APPLICATION_JSON)
         .bodyValue(errorAttributes);
@@ -97,10 +102,9 @@ public class WebExceptionHandler extends AbstractErrorWebExceptionHandler {
         .map(DefaultMessageSourceResolvable::getDefaultMessage).toList();
 
     Map<String, Object> response = new HashMap<>();
-    response.put("status", 400);
-    response.put("error", "Validation Error");
-    response.put("message", "Invalid input data");
-    response.put("errors", errors);
+    response.put(STATUS_KEY, 400);
+    response.put(MESSAGE_KEY, "Invalid input data");
+    response.put(ERROR_KEY, errors);
 
     return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON).bodyValue(response);
   }

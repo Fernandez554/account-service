@@ -16,7 +16,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @ExtendWith(MockitoExtension.class)
-public class BankAccountControllerTest {
+class BankAccountControllerTest {
 
   @Mock
   private BankAccountService bankAccountService;

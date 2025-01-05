@@ -1,8 +1,10 @@
 package com.nttbank.microservices.accountservice.model;
 
+import com.nttbank.microservices.accountservice.action.IDepositable;
 import com.nttbank.microservices.accountservice.action.IOpenable;
 import com.nttbank.microservices.accountservice.action.IWithdrawable;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
+import com.nttbank.microservices.accountservice.util.AccountUtils;
 import com.nttbank.microservices.accountservice.util.Constants;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -20,7 +22,7 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = false)
 @Data
 @NoArgsConstructor
-public class SavingsAccount extends BankAccount implements IOpenable, IWithdrawable {
+public class SavingsAccount extends BankAccount implements IOpenable, IWithdrawable, IDepositable {
 
   /**
    * Constructor that creates a SavingsAccount from an existing BankAccount object.
@@ -37,27 +39,18 @@ public class SavingsAccount extends BankAccount implements IOpenable, IWithdrawa
   @Override
   public void openAccount(Long numAccounts, String customerType) {
     //TODO: validar que tenga seteado MaxMonthlyTrans
-    Map<String, Long> accountLimits = Map.of(
-        "personal", Constants.ONE,
-        "business", Constants.ZERO
-    );
-
-    // Validate the customer type and the number of accounts
-    Optional.ofNullable(accountLimits.get(customerType))
-        .filter(limit -> numAccounts < limit)
-        .orElseThrow(() -> new IllegalArgumentException(
-            String.format(Constants.OPENING_ACCOUNT_RESTRICTION, this.getAccountType())));
+    AccountUtils.defaultOpenAccountValidationMethod(numAccounts, customerType,
+        AccountUtils.businessAccountLimits, this.getAccountType());
   }
 
   @Override
   public void withdraw(BigDecimal amount) {
-    BigDecimal actualBalance = (this.getBalance() == null ? BigDecimal.ZERO : this.getBalance());
-    actualBalance = actualBalance.subtract(amount).setScale(2, RoundingMode.HALF_DOWN);
-    if (actualBalance.compareTo(BigDecimal.ZERO) < 0) {
-      throw new IllegalArgumentException(
-          String.format(Constants.NO_WITHDRAW_FUNDS_AVAILABLE, this.getId()));
-    } else {
-      this.setBalance(actualBalance);
-    }
+    this.setBalance(AccountUtils.defaultWithdrawMethod(this.getBalance(), amount, this.getId()));
   }
+
+  @Override
+  public void deposit(BigDecimal amount) {
+    this.setBalance(AccountUtils.defaultDepositMethod(this.getBalance(), amount));
+  }
+
 }
