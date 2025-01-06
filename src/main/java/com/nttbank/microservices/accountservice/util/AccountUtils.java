@@ -5,31 +5,28 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Predicate;
+import java.util.function.IntPredicate;
 
 public class AccountUtils {
 
   private AccountUtils() {
   }
 
-  public static Predicate<Integer> isAbleToMakeTransactions = dayToTest -> {
+  public static IntPredicate isAbleToMakeTransactions = dayToTest -> {
+    int todayDay = LocalDate.now().getDayOfMonth();
+    return dayToTest == todayDay;
+  };
+
+  public static void validateTransactionDay(Integer dayToTest) {
     if (dayToTest == null) {
       throw new IllegalArgumentException(Constants.TRANSACTION_DAY_NOT_SET);
     }
-    try {
-      int todayDay = LocalDate.now().getDayOfMonth();
-      if (dayToTest != todayDay) {
-        throw new IllegalArgumentException(
-            String.format(Constants.TRANSACTION_DAY_NOT_TODAY, dayToTest)
-        );
-      }
-      return true;
-    } catch (NumberFormatException e) {
+    if (!isAbleToMakeTransactions.test(dayToTest)) {
       throw new IllegalArgumentException(
           String.format(Constants.TRANSACTION_DAY_NOT_TODAY, dayToTest)
       );
     }
-  };
+  }
 
   public static final Map<String, Long> personalAccountLimit = Map.of("personal", Constants.ONE);
   public static final Map<String, Long> businessAccountLimits = Map.of(

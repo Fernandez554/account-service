@@ -43,13 +43,13 @@ public class FixedDepositAccount extends BankAccount implements IOpenable, IWith
 
   @Override
   public void withdraw(BigDecimal amount) {
-    AccountUtils.isAbleToMakeTransactions.test(this.getAllowedDayOperation());
+    AccountUtils.validateTransactionDay(this.getAllowedDayOperation());
     this.setBalance(AccountUtils.defaultWithdrawMethod(this.getBalance(), amount, this.getId()));
   }
 
   @Override
   public void deposit(BigDecimal amount) {
-    AccountUtils.isAbleToMakeTransactions.test(this.getAllowedDayOperation());
+    AccountUtils.validateTransactionDay(this.getAllowedDayOperation());
     this.setBalance(AccountUtils.defaultDepositMethod(this.getBalance(), amount));
   }
 

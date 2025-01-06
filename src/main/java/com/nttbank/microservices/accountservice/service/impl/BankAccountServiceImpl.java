@@ -43,7 +43,7 @@ public class BankAccountServiceImpl implements BankAccountService {
 
   @Override
   public Mono<BankAccount> save(BankAccount account) {
-    logger.info("Creating a new account for customer {}", account.getCustomerId());
+    logger.info("Initiating the open bank account process.");
     return customerService.findCustomerById(account.getCustomerId())
         .flatMap(customer -> {
           BankAccount bankAccount = BackAccountFactory.createAccount(account.getAccountType(),
@@ -108,7 +108,7 @@ public class BankAccountServiceImpl implements BankAccountService {
 
   @Override
   public Mono<BankAccount> withdraw(String accountId, BigDecimal amount) {
-    logger.info("Withdrawing {} from account {}", amount, accountId);
+    logger.info("Initiating the withdraw process.");
     return repo.findById(accountId)
         .flatMap(b -> Mono.just(BackAccountFactory.createAccount(b.getAccountType(), b)))
         .flatMap(b -> {
@@ -137,7 +137,7 @@ public class BankAccountServiceImpl implements BankAccountService {
 
   @Override
   public Mono<BankAccount> deposit(String accountId, BigDecimal amount) {
-    logger.info("Depositing {} to account {}", amount, accountId);
+    logger.info("Initiating the deposit process.");
     return repo.findById(accountId)
         .flatMap(b -> Mono.just(BackAccountFactory.createAccount(b.getAccountType(), b)))
         .flatMap(b -> {
