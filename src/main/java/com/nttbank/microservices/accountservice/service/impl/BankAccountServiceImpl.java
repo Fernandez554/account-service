@@ -5,19 +5,23 @@ import com.nttbank.microservices.accountservice.action.IOpenable;
 import com.nttbank.microservices.accountservice.action.IWithdrawable;
 import com.nttbank.microservices.accountservice.factory.BackAccountFactory;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
+import com.nttbank.microservices.accountservice.model.response.MovementResponse;
 import com.nttbank.microservices.accountservice.model.response.TransferResponse;
 import com.nttbank.microservices.accountservice.repo.IBankAccountRepo;
 import com.nttbank.microservices.accountservice.service.BankAccountService;
 import com.nttbank.microservices.accountservice.service.CreditCardService;
 import com.nttbank.microservices.accountservice.service.CustomerService;
+import com.nttbank.microservices.accountservice.service.MovementService;
 import com.nttbank.microservices.accountservice.util.Constants;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -34,10 +38,12 @@ public class BankAccountServiceImpl implements BankAccountService {
   private final IBankAccountRepo repo;
   private final CustomerService customerService;
   private final CreditCardService creditCardService;
+  private final MovementService movementService;
+  private final TransactionalOperator transactionalOperator;
 
   @Override
   public Mono<BankAccount> save(BankAccount account) {
-
+    logger.info("Creating a new account for customer {}", account.getCustomerId());
     return customerService.findCustomerById(account.getCustomerId())
         .flatMap(customer -> {
           BankAccount bankAccount = BackAccountFactory.createAccount(account.getAccountType(),
@@ -65,9 +71,10 @@ public class BankAccountServiceImpl implements BankAccountService {
     if (accountProfileMap.get(bankAccount.getAccountType() + ":" + customerProfile) == null) {
       return Mono.just(bankAccount);
     }
-    logger.info("Calling creditCardService.totalActiveCreditsByCustomer for customer {}",
+    logger.info("Calling method to retrieve all active credit cards from customer {}",
         bankAccount.getCustomerId());
-    return creditCardService.totalActiveCreditsByCustomer(bankAccount.getCustomerId(), "Active")
+    return creditCardService.totalActiveCreditsCardsByCustomer(bankAccount.getCustomerId(),
+            "active")
         .flatMap(totalActiveCredits -> {
           logger.info("Total active credit cards for customer: {}", totalActiveCredits);
           if (totalActiveCredits == 0) {
@@ -101,30 +108,52 @@ public class BankAccountServiceImpl implements BankAccountService {
 
   @Override
   public Mono<BankAccount> withdraw(String accountId, BigDecimal amount) {
+    logger.info("Withdrawing {} from account {}", amount, accountId);
     return repo.findById(accountId)
         .flatMap(b -> Mono.just(BackAccountFactory.createAccount(b.getAccountType(), b)))
         .flatMap(b -> {
           if (b instanceof IWithdrawable) {
             ((IWithdrawable) b).withdraw(amount);
-            return repo.save(b);
-            //TODO: registrar la transaccion (withdraw) | llamado endpoint de transacciones
+            return repo.save(b)
+                .flatMap(bankAccount ->
+                    movementService.saveMovement(MovementResponse.builder()
+                        .customerId(bankAccount.getCustomerId())
+                        .accountId(accountId)
+                        .balanceAfterMovement(bankAccount.getBalance())
+                        .amount(amount)
+                        .type(Constants.WITHDRAWAL)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+                    ).thenReturn(bankAccount));
           }
           return Mono.error(
               new IllegalStateException("You cannot withdraw from this account: " + b.getId()));
-        }).onErrorResume(e -> {
+        })
+        .as(transactionalOperator::transactional)
+        .onErrorResume(e -> {
           return Mono.error(new IllegalStateException("Withdraw failed: " + e.getMessage(), e));
         });
   }
 
   @Override
   public Mono<BankAccount> deposit(String accountId, BigDecimal amount) {
+    logger.info("Depositing {} to account {}", amount, accountId);
     return repo.findById(accountId)
         .flatMap(b -> Mono.just(BackAccountFactory.createAccount(b.getAccountType(), b)))
         .flatMap(b -> {
           if (b instanceof IDepositable) {
             ((IDepositable) b).deposit(amount);
-            return repo.save(b);
-            //TODO: registrar la transaccion (deposit) | llamado endpoint de transacciones
+            return repo.save(b).flatMap(bankAccount -> {
+              return movementService.saveMovement(MovementResponse.builder()
+                  .customerId(bankAccount.getCustomerId())
+                  .accountId(accountId)
+                  .balanceAfterMovement(bankAccount.getBalance())
+                  .amount(amount)
+                  .type(Constants.DEPOSIT)
+                  .timestamp(LocalDateTime.now())
+                  .build()
+              ).thenReturn(bankAccount);
+            });
           }
           return Mono.error(
               new IllegalStateException("You cannot deposit to this account: " + b.getId()));
@@ -136,8 +165,13 @@ public class BankAccountServiceImpl implements BankAccountService {
   @Override
   public Mono<TransferResponse> transfer(String fromAccountId, String toAccountId,
       BigDecimal amount) {
-    return withdraw(fromAccountId, amount).flatMap(fromAccount -> deposit(toAccountId, amount).map(
-        toAccount -> new TransferResponse(fromAccountId, toAccountId, amount))).onErrorResume(
-        e -> Mono.error(new IllegalStateException("Transfer failed: " + e.getMessage(), e)));
+    logger.info("Transferring {} from account {} to account {}", amount, fromAccountId,
+        toAccountId);
+    return withdraw(fromAccountId, amount)
+        .flatMap(fromAccount -> deposit(toAccountId, amount).map(
+            toAccount -> new TransferResponse(fromAccountId, toAccountId, amount)))
+        .onErrorResume(
+            e -> Mono.error(
+                new IllegalStateException("Transfer failed: " + e.getMessage(), e)));
   }
 }

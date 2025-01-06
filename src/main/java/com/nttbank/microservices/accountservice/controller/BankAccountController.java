@@ -148,7 +148,7 @@ public class BankAccountController {
           db.setBalance(c.getBalance());
           db.setMaxMonthlyTrans(c.getMaxMonthlyTrans());
           db.setMaintenanceFee(c.getMaintenanceFee());
-          db.setAllowedWithdrawalDay(c.getAllowedWithdrawalDay());
+          db.setAllowedDayOperation(c.getAllowedDayOperation());
           db.setWithdrawAmountMax(c.getWithdrawAmountMax());
           db.setLstSigners(c.getLstSigners());
           db.setLstHolders(c.getLstHolders());
@@ -255,6 +255,27 @@ public class BankAccountController {
     return bankAccountService.transfer(fromAccountId, toAccountId, amount)
         .map(e -> ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(e))
         .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+  }
+
+  /**
+   * Retrieve movements for an account.
+   *
+   * @param id the ID of the account to retrieve movements for.
+   * @return a {@link Mono} containing a {@link ResponseEntity} with the movements for the account.
+   */
+  @Operation(summary = "Retrieve movements for an account",
+      description = "Fetches the movements for the specified account.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Movements found",
+          content = @Content(mediaType = "application/json")),
+      @ApiResponse(responseCode = "404", description = "Account not found")
+  })
+  @GetMapping("/{account_id}/movements")
+  public Mono<ResponseEntity<BankAccount>> findMovements(
+      @Valid @PathVariable("account_id") String id) {
+    return bankAccountService.findById(id)
+        .map(c -> ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(c))
+        .defaultIfEmpty(ResponseEntity.notFound().build());
   }
 
 }

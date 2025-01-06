@@ -9,6 +9,15 @@ public class Constants {
   public static final String MESSAGE_KEY = "message";
   public static final String PATH_KEY = "path";
   public static final String ERROR_KEY = "error";
+  public static final String WITHDRAWAL = "withdrawal";
+  public static final String DEPOSIT = "deposit";
+  public static final String PAYMENT = "payment";
+  public static final String CHARGE = "charge";
+  public static final String TRANSACTION_DAY_NOT_SET =
+      "The transaction cannot be processed because the specific "
+          + "day for transactions has not been set for this account.";
+  public static final String TRANSACTION_DAY_NOT_TODAY = "This account allows transactions only "
+      + "on %sth day of the month.";
   public static final String INVALID_ACCOUNT_TYPE =
       "You cannot open an account of this type";
   public static final String NO_ACTIVE_CREDIT_CARDS =
@@ -17,6 +26,7 @@ public class Constants {
       "Customer is restricted from opening a new account of type %s";
   public static final String NO_WITHDRAW_FUNDS_AVAILABLE =
       "Account balance %s doesn't have the enough funds to cover the withdraw";
+  public static final String OPERATION_NOT_ALLOWED = "Operation not allowed";
   public static final Long ONE = 1L;
   public static final Long ZERO = 0L;
 

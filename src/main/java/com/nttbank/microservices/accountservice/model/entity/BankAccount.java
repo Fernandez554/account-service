@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -54,7 +53,7 @@ public class BankAccount {
   @Builder.Default
   private BigDecimal maintenanceFee = BigDecimal.ZERO;
 
-  private LocalDate allowedWithdrawalDay;
+  private Integer allowedDayOperation;
 
   private BigDecimal withdrawAmountMax;
 

@@ -28,7 +28,7 @@ public class CheckingAccount extends BankAccount implements IOpenable, IWithdraw
   public CheckingAccount(BankAccount account) {
     super(account.getId(), account.getAccountType(), account.getCustomerId(), account.getBalance(),
         account.getMaxMonthlyTrans(), account.getMaintenanceFee(),
-        account.getAllowedWithdrawalDay(), account.getWithdrawAmountMax(), account.getLstSigners(),
+        account.getAllowedDayOperation(), account.getWithdrawAmountMax(), account.getLstSigners(),
         account.getLstHolders(), account.getCreationDate());
   }
 

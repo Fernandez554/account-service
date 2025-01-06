@@ -5,11 +5,7 @@ import com.nttbank.microservices.accountservice.action.IOpenable;
 import com.nttbank.microservices.accountservice.action.IWithdrawable;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
 import com.nttbank.microservices.accountservice.util.AccountUtils;
-import com.nttbank.microservices.accountservice.util.Constants;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.Map;
-import java.util.Optional;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -32,7 +28,7 @@ public class SavingsAccount extends BankAccount implements IOpenable, IWithdrawa
   public SavingsAccount(BankAccount account) {
     super(account.getId(), account.getAccountType(), account.getCustomerId(), account.getBalance(),
         account.getMaxMonthlyTrans(), account.getMaintenanceFee(),
-        account.getAllowedWithdrawalDay(), account.getWithdrawAmountMax(), account.getLstSigners(),
+        account.getAllowedDayOperation(), account.getWithdrawAmountMax(), account.getLstSigners(),
         account.getLstHolders(), account.getCreationDate());
   }
 

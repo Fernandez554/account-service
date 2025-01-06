@@ -2,11 +2,14 @@ package com.nttbank.microservices.accountservice.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.mongodb.ReactiveMongoDatabaseFactory;
+import org.springframework.data.mongodb.ReactiveMongoTransactionManager;
 import org.springframework.data.mongodb.core.convert.DefaultMongoTypeMapper;
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 /**
  * Configuration class for MongoDB. This configuration is responsible for customizing the MongoDB
@@ -23,5 +26,15 @@ public class MongoConfig implements InitializingBean {
   @Override
   public void afterPropertiesSet() throws Exception {
     converter.setTypeMapper(new DefaultMongoTypeMapper(null));
+  }
+  @Bean
+  public ReactiveMongoTransactionManager transactionManager(ReactiveMongoDatabaseFactory factory) {
+    return new ReactiveMongoTransactionManager(factory);
+  }
+
+  @Bean
+  public TransactionalOperator transactionalOperator(
+      ReactiveMongoTransactionManager transactionManager) {
+    return TransactionalOperator.create(transactionManager);
   }
 }

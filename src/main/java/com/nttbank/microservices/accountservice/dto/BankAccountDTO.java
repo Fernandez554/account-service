@@ -1,11 +1,11 @@
 package com.nttbank.microservices.accountservice.dto;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -43,7 +43,9 @@ public class BankAccountDTO {
 
   private BigDecimal maintenanceFee;
 
-  private LocalDate allowedWithdrawalDay;
+  @Min(value = 1, message = "Allowed day of operation must be between 1 and 31")
+  @Max(value = 31, message = "Allowed day of operation must be between 1 and 31")
+  private Integer allowedDayOperation;
 
   private BigDecimal withdrawAmountMax;
 

@@ -11,7 +11,7 @@ public class CreditCardService {
 
   private final CloudGatewayFeign feignCreditCard;
 
-  public Mono<Long> totalActiveCreditsByCustomer(String customerId, String status) {
-    return feignCreditCard.totalActiveCreditsByCustomer(customerId, status);
+  public Mono<Long> totalActiveCreditsCardsByCustomer(String customerId, String status) {
+    return feignCreditCard.totalActiveCreditCardsByCustomer(customerId, status);
   }
 }
