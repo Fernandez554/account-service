@@ -165,8 +165,7 @@ public class BankAccountServiceImpl implements BankAccountService {
   @Override
   public Mono<TransferResponse> transfer(String fromAccountId, String toAccountId,
       BigDecimal amount) {
-    logger.info("Transferring {} from account {} to account {}", amount, fromAccountId,
-        toAccountId);
+    logger.info("Initiating the transfer process.");
     return withdraw(fromAccountId, amount)
         .flatMap(fromAccount -> deposit(toAccountId, amount).map(
             toAccount -> new TransferResponse(fromAccountId, toAccountId, amount)))
