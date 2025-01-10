@@ -4,6 +4,7 @@ import com.nttbank.microservices.accountservice.dto.BankAccountDTO;
 import com.nttbank.microservices.accountservice.mapper.BankAccountMapper;
 import com.nttbank.microservices.accountservice.model.entity.AccountTransactions;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
+import com.nttbank.microservices.accountservice.model.response.CommissionsReportResponse;
 import com.nttbank.microservices.accountservice.model.response.TransferResponse;
 import com.nttbank.microservices.accountservice.service.BankAccountService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,7 +17,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -198,7 +201,8 @@ public class BankAccountController {
       @ApiResponse(responseCode = "404", description = "Account not found")
   })
   @PostMapping("/{account_id}/deposit")
-  public Mono<ResponseEntity<AccountTransactions>> deposit(@PathVariable("account_id") String accountId,
+  public Mono<ResponseEntity<AccountTransactions>> deposit(
+      @PathVariable("account_id") String accountId,
       @RequestParam("amount")
       @NotNull @Positive(message = "Deposit amount must be greater than zero") BigDecimal amount) {
 
@@ -223,7 +227,8 @@ public class BankAccountController {
       @ApiResponse(responseCode = "404", description = "Account not found")
   })
   @PostMapping("/{account_id}/withdraw")
-  public Mono<ResponseEntity<AccountTransactions>> withdraw(@PathVariable("account_id") String accountId,
+  public Mono<ResponseEntity<AccountTransactions>> withdraw(
+      @PathVariable("account_id") String accountId,
       @RequestParam("amount")
       @NotNull
       @Positive(message = "Withdrawal amount must be greater than zero") BigDecimal amount) {
@@ -376,5 +381,19 @@ public class BankAccountController {
         .map(c -> ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(c))
         .defaultIfEmpty(ResponseEntity.notFound().build());
   }
+
+  @PostMapping("/reports/commissions")
+  public Mono<ResponseEntity<CommissionsReportResponse>> reportCommisionsByProduct(
+      @RequestParam("startDate")
+      @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDate startDate,
+      @RequestParam("endDate")
+      @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDate endDate,
+      @RequestParam("productName")
+      @NotNull(message = "productName cannot be null") String productName) {
+    return bankAccountService.generateReportCommissionsProduct(startDate, endDate, productName)
+        .map(c -> ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(c))
+        .defaultIfEmpty(ResponseEntity.notFound().build());
+  }
+
 
 }

@@ -7,6 +7,7 @@ import com.nttbank.microservices.accountservice.model.entity.BankAccount;
 import com.nttbank.microservices.accountservice.util.AccountUtils;
 import com.nttbank.microservices.accountservice.util.Constants;
 import java.math.BigDecimal;
+import java.util.Optional;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -34,28 +35,28 @@ public class FixedDepositAccount extends BankAccount implements IOpenable, IWith
         account.getMaxMonthlyTrans(), account.getMaintenanceFee(), account.getTransactionFee(),
         account.getAllowedDayOperation(), account.getWithdrawAmountMax(), account.getLstSigners(),
         account.getLstHolders(), account.getCreatedAt(), account.getUpdatedAt(),
-        account.getMonthlyTransactionSummary(), account.getLstTransactions());
+        account.getMonthlyTransactionSummary(), account.getLstTransactions(), account.getStatus());
   }
 
   @Override
   public void openAccount(Long numAccounts, String customerType) {
-    if (null == this.getAllowedDayOperation()) {
-      throw new IllegalArgumentException(
-          Constants.ALLOWED_DAY_OP_REQUIRED);
-    }
+    Optional.ofNullable(this.getAllowedDayOperation())
+        .orElseThrow(() -> new IllegalArgumentException(
+            Constants.ALLOWED_DAY_OP_REQUIRED));
     AccountUtils.defaultOpenAccountValidationMethod(numAccounts, customerType,
-        AccountUtils.businessAccountLimits, this.getAccountType());
+        AccountUtils.bothAccountLimits, this.getAccountType());
   }
 
   @Override
   public void withdraw(BigDecimal amount) {
-    AccountUtils.validateTransactionDay(this.getAllowedDayOperation());
+//    AccountUtils.validateCanMakeATransaction(this.getAllowedDayOperation());
     this.setBalance(AccountUtils.defaultWithdrawMethod(this.getBalance(), amount, this.getId()));
   }
 
   @Override
   public void deposit(BigDecimal amount) {
-    AccountUtils.validateTransactionDay(this.getAllowedDayOperation());
+    AccountUtils.isAbleToMakeTransactions(this.getMonthlyTransactionSummary(),
+        this.getAllowedDayOperation(), this.getId());
     this.setBalance(AccountUtils.defaultDepositMethod(this.getBalance(), amount));
   }
 

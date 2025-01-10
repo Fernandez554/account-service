@@ -2,8 +2,10 @@ package com.nttbank.microservices.accountservice.service;
 
 import com.nttbank.microservices.accountservice.model.entity.AccountTransactions;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
+import com.nttbank.microservices.accountservice.model.response.CommissionsReportResponse;
 import com.nttbank.microservices.accountservice.model.response.TransferResponse;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -39,4 +41,7 @@ public interface BankAccountService {
   Mono<BankAccount> deleteHolder(String accountId, String holderId);
 
   Flux<AccountTransactions> findAccountTransactions(String accountId);
+
+  Mono<CommissionsReportResponse> generateReportCommissionsProduct(LocalDate startDate,
+      LocalDate endDate, String productName);
 }

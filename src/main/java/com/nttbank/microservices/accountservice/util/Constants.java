@@ -2,8 +2,6 @@ package com.nttbank.microservices.accountservice.util;
 
 public class Constants {
 
-
-
   private Constants() {
   }
 
@@ -21,6 +19,8 @@ public class Constants {
           + "day for transactions has not been set for this account.";
   public static final String TRANSACTION_DAY_NOT_TODAY = "This account allows transactions only "
       + "on %sth day of the month.";
+  public static final String MAX_TRANSACTION_LIMIT_EXCEEDED_ERROR = "Transaction limit for the day "
+      + "has been exceeded. You cannot perform more than %d transactions today for this account %s.";
   public static final String INVALID_ACCOUNT_TYPE =
       "Invalid account type. ";
   public static final String NO_ACTIVE_CREDIT_CARDS =

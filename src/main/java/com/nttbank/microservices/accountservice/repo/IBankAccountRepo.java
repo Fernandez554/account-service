@@ -12,5 +12,6 @@ import reactor.core.publisher.Mono;
  */
 public interface IBankAccountRepo extends ReactiveMongoRepository<BankAccount, String> {
 
-  Mono<Long> countByCustomerIdAndAccountType(String customerId, String accountType);
+  Mono<Long> countByCustomerIdAndAccountTypeAndStatus(String customerId, String accountType,
+      String status);
 }

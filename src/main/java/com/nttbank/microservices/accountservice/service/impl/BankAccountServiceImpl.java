@@ -4,9 +4,12 @@ import com.nttbank.microservices.accountservice.action.IDepositable;
 import com.nttbank.microservices.accountservice.action.IOpenable;
 import com.nttbank.microservices.accountservice.action.IWithdrawable;
 import com.nttbank.microservices.accountservice.factory.BackAccountFactory;
+import com.nttbank.microservices.accountservice.model.entity.AccountStatus;
 import com.nttbank.microservices.accountservice.model.entity.AccountTransactions;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
 import com.nttbank.microservices.accountservice.model.entity.MonthlyTransactionSummary;
+import com.nttbank.microservices.accountservice.model.entity.TransactionType;
+import com.nttbank.microservices.accountservice.model.response.CommissionsReportResponse;
 import com.nttbank.microservices.accountservice.model.response.CustomerResponse;
 import com.nttbank.microservices.accountservice.model.response.TransferResponse;
 import com.nttbank.microservices.accountservice.repo.IAccountTransactionRepo;
@@ -18,8 +21,10 @@ import com.nttbank.microservices.accountservice.util.AccountUtils;
 import com.nttbank.microservices.accountservice.util.Constants;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -53,18 +58,17 @@ public class BankAccountServiceImpl implements BankAccountService {
               account);
           if (!(bankAccount instanceof IOpenable)) {
             log.warn(Constants.INVALID_ACCOUNT_TYPE);
-            return Mono.error(
-                new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    Constants.INVALID_ACCOUNT_TYPE));
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                Constants.INVALID_ACCOUNT_TYPE));
           }
-          return hasLeastOneCreditCard(bankAccount, customer.getProfile())
-              .flatMap(b -> isABusinessAccount(b, customer))
-              .flatMap(b ->
-                  accountRepo.countByCustomerIdAndAccountType(customer.getId(),
-                      bankAccount.getAccountType())
-              ).flatMap(totalAccounts -> {
+          return accountRepo.countByCustomerIdAndAccountTypeAndStatus(customer.getId(),
+                  bankAccount.getAccountType(), AccountStatus.active.name())
+              .flatMap(totalAccounts -> {
                 ((IOpenable) bankAccount).openAccount(totalAccounts, customer.getType());
-                return accountRepo.save(bankAccount);
+                return hasLeastOneCreditCard(bankAccount, customer.getProfile())
+                    .flatMap(b -> {
+                      return accountRepo.save(bankAccount);
+                    });
               });
         });
   }
@@ -75,12 +79,11 @@ public class BankAccountServiceImpl implements BankAccountService {
   }
 
   private Mono<BankAccount> hasLeastOneCreditCard(BankAccount bankAccount, String customerProfile) {
-    log.info("Checking if the customer has at least one active credit card.");
-
     if (!AccountUtils.CHECK_CUSTOMER_CREDIT_CARD
         .test(bankAccount.getAccountType(), customerProfile)) {
       return Mono.just(bankAccount);
     }
+    log.info("Checking if the customer has at least one active credit card.");
     return creditCardService.totalActiveCreditsCardsByCustomer(bankAccount.getCustomerId(),
             AccountUtils.CREDIT_CARD_STATUS_ACTIVE)
         .flatMap(totalActiveCredits -> {
@@ -132,7 +135,7 @@ public class BankAccountServiceImpl implements BankAccountService {
             return addOneTransaction(b)
                 .flatMap(bankAccount -> {
                   return saveTransaction(bankAccount, amount.setScale(2, RoundingMode.HALF_UP),
-                      Constants.WITHDRAWAL)
+                      TransactionType.withdrawal)
                       .flatMap(transactionOne -> {
                         return checkAndHandleMaxTransactions(bankAccount,
                             amount.setScale(2, RoundingMode.HALF_UP))
@@ -163,7 +166,7 @@ public class BankAccountServiceImpl implements BankAccountService {
             return addOneTransaction(b)
                 .flatMap(bankAccount -> {
                   return saveTransaction(bankAccount, amount.setScale(2, RoundingMode.HALF_UP),
-                      Constants.DEPOSIT)
+                      TransactionType.deposit)
                       .flatMap(transactionOne -> {
                         return checkAndHandleMaxTransactions(bankAccount,
                             amount.setScale(2, RoundingMode.HALF_UP))
@@ -229,7 +232,7 @@ public class BankAccountServiceImpl implements BankAccountService {
                 .subtract(totalAmountWithFee)
                 .setScale(2, RoundingMode.HALF_UP)
         );
-        return saveTransaction(account, totalAmountWithFee, Constants.FEES)
+        return saveTransaction(account, totalAmountWithFee, TransactionType.fee)
             .thenReturn(account);
       }
       return Mono.just(account);
@@ -237,14 +240,15 @@ public class BankAccountServiceImpl implements BankAccountService {
   }
 
   private Mono<AccountTransactions> saveTransaction(BankAccount account, BigDecimal amount,
-      String action) {
-    log.info("Saving the {} transaction.", action);
+      TransactionType type) {
+    log.info("Saving the {} transaction.", type);
     return transactionRepo.save(AccountTransactions.builder()
         .customerId(account.getCustomerId())
         .accountId(account.getId())
+        .productName(account.getAccountType())
         .balanceAfterMovement(account.getBalance())
         .amount(amount)
-        .type(action)
+        .type(type)
         .createdAt(LocalDateTime.now())
         .build()
     );
@@ -315,6 +319,42 @@ public class BankAccountServiceImpl implements BankAccountService {
   @Override
   public Flux<AccountTransactions> findAccountTransactions(String accountId) {
     return transactionRepo.findAllByAccountId(accountId);
+  }
+
+  @Override
+  public Mono<CommissionsReportResponse> generateReportCommissionsProduct(LocalDate startDate,
+      LocalDate endDate, String productName) {
+    if (startDate.isAfter(endDate)) {
+      throw new IllegalArgumentException("Start date must be before end date.");
+    }
+    LocalDateTime startDateTime = startDate.atStartOfDay();
+    LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+
+    return transactionRepo.findByProductNameAndTypeAndCreatedAtBetween(productName,
+            TransactionType.fee.name(),
+            startDateTime, endDateTime)
+        .map(c -> AccountTransactions.builder()
+            .accountId(c.getAccountId())
+            .productName(c.getProductName())
+            .type(c.getType())
+            .createdAt(c.getCreatedAt())
+            .amount(c.getAmount())
+            .balanceAfterMovement(c.getBalanceAfterMovement())
+            .build())
+        .collect(Collectors.toList())
+        .flatMap(lstTransactions -> {
+          return Mono.just(
+              CommissionsReportResponse.builder()
+                  .description(
+                      "Report of all the commissions charged by product over a period of time.")
+                  .productName(productName)
+                  .startDate(startDate)
+                  .endDate(endDate)
+                  .generatedAt(LocalDateTime.now())
+                  .lstReportDay(lstTransactions)
+                  .build()
+          );
+        });
   }
 
 

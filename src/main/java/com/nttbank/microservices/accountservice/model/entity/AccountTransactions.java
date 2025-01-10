@@ -30,8 +30,10 @@ public class AccountTransactions {
 
   private String accountId;
 
+  private String productName;
+
   @NotNull(message = "Transaction type cannot be null.")
-  private String type;
+  private TransactionType type;
 
   @DecimalMin(value = "0.00", message = "Amount must be greater than 0.")
   @NotNull(message = "Amount cannot be null.")

@@ -80,4 +80,7 @@ public class BankAccount {
 
   private List<AccountTransactions> lstTransactions;
 
+  @Builder.Default
+  private AccountStatus status = AccountStatus.active;
+
 }

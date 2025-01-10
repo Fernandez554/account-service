@@ -5,6 +5,7 @@ import com.nttbank.microservices.accountservice.model.FixedDepositAccount;
 import com.nttbank.microservices.accountservice.model.SavingsAccount;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 /**
@@ -39,9 +40,8 @@ public class BackAccountFactory {
    */
   public static BankAccount createAccount(String type, BankAccount existingAccount) {
     UnaryOperator<BankAccount> creator = accountCreators.get(type.toLowerCase());
-    if (creator == null) {
-      throw new IllegalArgumentException("Unknown account type: " + type);
-    }
-    return creator.apply(existingAccount);
+    return Optional.ofNullable(creator)
+        .map((c) -> c.apply(existingAccount))
+        .orElseThrow(() -> new IllegalArgumentException("Unknown account type: " + type));
   }
 }

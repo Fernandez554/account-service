@@ -7,6 +7,7 @@ import com.nttbank.microservices.accountservice.model.entity.BankAccount;
 import com.nttbank.microservices.accountservice.util.AccountUtils;
 import com.nttbank.microservices.accountservice.util.Constants;
 import java.math.BigDecimal;
+import java.util.Optional;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -31,17 +32,18 @@ public class CheckingAccount extends BankAccount implements IOpenable, IWithdraw
         account.getMaxMonthlyTrans(), account.getMaintenanceFee(), account.getTransactionFee(),
         account.getAllowedDayOperation(), account.getWithdrawAmountMax(), account.getLstSigners(),
         account.getLstHolders(), account.getCreatedAt(), account.getUpdatedAt(),
-        account.getMonthlyTransactionSummary(), account.getLstTransactions());
+        account.getMonthlyTransactionSummary(), account.getLstTransactions(), account.getStatus());
   }
 
   @Override
   public void openAccount(Long numAccounts, String customerType) {
-    if (null == this.getMaintenanceFee()) {
-      throw new IllegalArgumentException(
-          Constants.MAINTENANCE_FEE_REQUIRED);
+    Optional.ofNullable(this.getMaintenanceFee())
+        .orElseThrow(() -> new IllegalArgumentException(
+            Constants.MAINTENANCE_FEE_REQUIRED));
+    if (!"business".equals(customerType)) {
+      AccountUtils.defaultOpenAccountValidationMethod(numAccounts, customerType,
+          AccountUtils.personalAccountLimit, this.getAccountType());
     }
-    AccountUtils.defaultOpenAccountValidationMethod(numAccounts, customerType,
-        AccountUtils.personalAccountLimit, this.getAccountType());
   }
 
   @Override
