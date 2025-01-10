@@ -1,5 +1,9 @@
 package com.nttbank.microservices.accountservice.dto;
 
+import com.nttbank.microservices.accountservice.model.entity.MonthlyTransactionSummary;
+import com.nttbank.microservices.accountservice.model.entity.AccountTransactions;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
@@ -8,6 +12,7 @@ import jakarta.validation.constraints.Pattern;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -38,10 +43,17 @@ public class BankAccountDTO {
   @Min(value = 0, message = "Balance must be greater than or equal to 0")
   private BigDecimal balance;
 
-  @Min(value = 0, message = "Max. Monthly transactions by account cannot be lower or equal to 0")
+  @NotNull(message = "Max. Monthly transactions cannot be null")
+  @Min(value = 1, message = "Max. Monthly transactions by account cannot be  lower or equal to 0")
   private Integer maxMonthlyTrans;
 
-  private BigDecimal maintenanceFee;
+  @Builder.Default
+  private BigDecimal maintenanceFee = BigDecimal.ZERO;
+
+  @NotNull(message = "Transaction fee cannot be null")
+  @DecimalMin(value = "0.01", message = "The transaction fee must be at least 0.01.")
+  @DecimalMax(value = "100.00", message = "The transaction fee must be less than or equal to 100.")
+  private BigDecimal transactionFee;
 
   @Min(value = 1, message = "Allowed day of operation must be between 1 and 31")
   @Max(value = 31, message = "Allowed day of operation must be between 1 and 31")
@@ -49,9 +61,17 @@ public class BankAccountDTO {
 
   private BigDecimal withdrawAmountMax;
 
-  private List<String> lstSigners;
+  private Set<String> lstSigners;
 
-  private List<String> lstHolders;
+  private Set<String> lstHolders;
 
-  private LocalDateTime creationDate;
+  @Builder.Default
+  private LocalDateTime createdAt = LocalDateTime.now();
+
+  @Builder.Default
+  private LocalDateTime updatedAt = LocalDateTime.now();
+
+  private MonthlyTransactionSummary monthlyTransactionSummary;
+
+  private List<AccountTransactions> lstTransactions;
 }

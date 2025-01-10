@@ -2,9 +2,12 @@ package com.nttbank.microservices.accountservice.util;
 
 public class Constants {
 
+
+
   private Constants() {
   }
 
+  public static final String FEES = "fee";
   public static final String STATUS_KEY = "status";
   public static final String MESSAGE_KEY = "message";
   public static final String PATH_KEY = "path";
@@ -19,13 +22,19 @@ public class Constants {
   public static final String TRANSACTION_DAY_NOT_TODAY = "This account allows transactions only "
       + "on %sth day of the month.";
   public static final String INVALID_ACCOUNT_TYPE =
-      "You cannot open an account of this type";
+      "Invalid account type. ";
   public static final String NO_ACTIVE_CREDIT_CARDS =
       "Customer must have at least one active credit card to open this account";
   public static final String OPENING_ACCOUNT_RESTRICTION =
       "Customer is restricted from opening a new account of type %s";
   public static final String NO_WITHDRAW_FUNDS_AVAILABLE =
       "Account balance %s doesn't have the enough funds to cover the withdraw";
+  public static final String MAX_MONTHLY_TRANS_REQUIRED =
+      "Max monthly transactions must be set for this account type";
+  public static final String MAINTENANCE_FEE_REQUIRED =
+      "Maintenance fee must be set for this account type";
+  public static final String ALLOWED_DAY_OP_REQUIRED =
+      "Allowed day for operations must be set for this account type";
   public static final String OPERATION_NOT_ALLOWED = "Operation not allowed";
   public static final Long ONE = 1L;
   public static final Long ZERO = 0L;

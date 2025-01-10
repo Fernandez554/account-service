@@ -1,10 +1,8 @@
 package com.nttbank.microservices.accountservice.proxy.openfeign;
 
 import com.nttbank.microservices.accountservice.model.response.CustomerResponse;
-import com.nttbank.microservices.accountservice.model.response.MovementResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import reactivefeign.spring.config.ReactiveFeignClient;
 import reactor.core.publisher.Flux;
@@ -26,8 +24,5 @@ public interface CloudGatewayFeign {
   @GetMapping("/api/creditcard-service/creditcards/{customer_id}/count")
   Mono<Long> totalActiveCreditCardsByCustomer(@PathVariable("customer_id") String customerId,
       @RequestParam("status") String status);
-
-  @PostMapping("/api/movement-service/movements")
-  Mono<MovementResponse> saveMovement(MovementResponse movement);
 
 }

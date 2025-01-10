@@ -3,6 +3,7 @@ package com.nttbank.microservices.accountservice.model.response;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,4 +31,6 @@ public class TransferResponse {
   private String fromAccount;
   private String toAccount;
   private BigDecimal amount;
+  private LocalDateTime createdAt;
+
 }

@@ -1,6 +1,8 @@
 package com.nttbank.microservices.accountservice.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -8,6 +10,7 @@ import jakarta.validation.constraints.Pattern;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,7 +30,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @NoArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Builder
+@Builder(toBuilder = true)
 public class BankAccount {
 
   @EqualsAndHashCode.Include
@@ -47,21 +50,34 @@ public class BankAccount {
   @Builder.Default
   private BigDecimal balance = BigDecimal.ZERO;
 
-  @Min(value = 0, message = "Max. Monthly transactions by account cannot be  lower or equal to 0")
+  @NotNull(message = "Max. Monthly transactions cannot be null")
+  @Min(value = 1, message = "Max. Monthly transactions by account cannot be  lower or equal to 0")
   private Integer maxMonthlyTrans;
 
   @Builder.Default
   private BigDecimal maintenanceFee = BigDecimal.ZERO;
 
+  @NotNull(message = "Transaction fee cannot be null")
+  @DecimalMin(value = "0.01", message = "The transaction fee must be at least 0.01.")
+  @DecimalMax(value = "100.00", message = "The transaction fee must be less than or equal to 100.")
+  private BigDecimal transactionFee;
+
   private Integer allowedDayOperation;
 
   private BigDecimal withdrawAmountMax;
 
-  private List<String> lstSigners;
+  private Set<String> lstSigners;
 
-  private List<String> lstHolders;
+  private Set<String> lstHolders;
 
   @Builder.Default
-  private LocalDateTime creationDate = LocalDateTime.now();
+  private LocalDateTime createdAt = LocalDateTime.now();
+
+  @Builder.Default
+  private LocalDateTime updatedAt = LocalDateTime.now();
+
+  private MonthlyTransactionSummary monthlyTransactionSummary;
+
+  private List<AccountTransactions> lstTransactions;
 
 }

@@ -1,0 +1,498 @@
+openapi: 3.0.1
+info:
+  title: Banking System API
+  description: API for managing bank accounts.
+  contact:
+    name: Jesus Fernandez
+    url: https://google.com
+    email: jesus.fernandez.malpartida@gmail.com
+  license:
+    name: Apache 2.0
+    url: http://springdoc.org
+  version: v1.0
+externalDocs:
+  description: Springdoc OpenAPI Documentation
+  url: https://springdoc.org/
+servers:
+  - url: http://localhost:9011
+    description: Generated server url
+tags:
+  - name: Account-Service
+    description: Manage bank accounts
+paths:
+  /accounts:
+    get:
+      tags:
+        - Account-Service
+      summary: Retrieve all bank accounts
+      description: Fetches a list of all bank accounts.
+      operationId: findAll
+      responses:
+        '200':
+          description: Accounts found
+          content:
+            application/json: {}
+        '204':
+          description: No accounts found
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BankAccount'
+    post:
+      tags:
+        - Account-Service
+      summary: Create a new bank account
+      description: Adds a new bank account.
+      operationId: save
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankAccountDTO'
+        required: true
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json: {}
+        '401':
+          description: Unauthorized action
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/BankAccount'
+  /accounts/{account_id}:
+    get:
+      tags:
+        - Account-Service
+      summary: Retrieve a bank account by ID
+      description: Fetches a bank account using its unique ID.
+      operationId: findById
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Account found
+          content:
+            application/json: {}
+        '404':
+          description: Account not found
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/BankAccount'
+    put:
+      tags:
+        - Account-Service
+      summary: Update an existing bank account
+      description: Updates the details of an existing bank account.
+      operationId: update
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankAccountDTO'
+        required: true
+      responses:
+        '200':
+          description: Account updated
+          content:
+            application/json: {}
+        '404':
+          description: Account not found
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/BankAccount'
+    delete:
+      tags:
+        - Account-Service
+      summary: Delete a bank account
+      description: Deletes a bank account using its ID.
+      operationId: delete
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Account deleted
+        '404':
+          description: Account not found
+  /accounts/{account_id}/deposit:
+    post:
+      tags:
+        - Account-Service
+      summary: Deposit into a bank account
+      description: Deposits an amount into the specified account.
+      operationId: deposit
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: amount
+          in: query
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Deposit successful
+          content:
+            application/json: {}
+        '404':
+          description: Account not found
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/BankAccount'
+  /accounts/{account_id}/transactions:
+    get:
+      tags:
+        - Account-Service
+      summary: Retrieve movements for an account
+      description: Fetches the movements for the specified account.
+      operationId: findMovements
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Movements found
+          content:
+            application/json: {}
+        '404':
+          description: Account not found
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccountTransactions'
+  /accounts/{account_id}/withdraw:
+    post:
+      tags:
+        - Account-Service 
+      summary: Withdraw from a bank account
+      description: Withdraws an amount from the specified account.
+      operationId: withdraw
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: amount
+          in: query
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Withdrawal successful
+          content:
+            application/json: {}
+        '404':
+          description: Account not found
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/BankAccount'
+  /accounts/{account_id}/signers/{signer_id}:
+    post:
+      tags:
+        - Account-Service
+      summary: Save a signer to an account
+      description: Adds a signer to the specified account.
+      operationId: saveSigner
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: signer_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Signer saved
+          content:
+            application/json: {}
+        '404':
+          description: Account not found
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/BankAccount'
+    delete:
+      tags:
+        - Account-Service
+      summary: Delete a signer from an account
+      description: Removes a signer from the specified account.
+      operationId: deleteSigner
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: signer_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Signer deleted
+          content:
+            application/json: {}
+        '404':
+          description: Account not found
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/BankAccount'
+  /accounts/{account_id}/holders/{holder_id}:
+    post:
+      tags:
+        - Account-Service
+      summary: Save a holder to an account
+      description: Adds a holder to the specified account.
+      operationId: saveHolder
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: holder_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Holder saved
+          content:
+            application/json: {}
+        '404':
+          description: Account not found
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/BankAccount'
+    delete:
+      tags:
+        - Account-Service
+      summary: Delete a holder from an account
+      description: Removes a holder from the specified account.
+      operationId: deleteHolder
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: holder_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Holder deleted
+          content:
+            application/json: {}
+        '404':
+          description: Account not found
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/BankAccount'
+  /accounts/{from_account_id}/{to_account_id}/transfer:
+    post:
+      tags:
+        - Account-Service
+      summary: Transfer between accounts
+      description: Transfers an amount from one account to another.
+      operationId: transfer
+      parameters:
+        - name: from_account_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: to_account_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: amount
+          in: query
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Transfer successful
+          content:
+            application/json: {}
+        '404':
+          description: Account not found
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+components:
+  schemas:
+    AccountTransactions:
+      required:
+        - amount
+        - createdAt
+        - type
+      type: object
+      properties:
+        id:
+          type: string
+        customerId:
+          type: string
+        accountId:
+          type: string
+        type:
+          type: string
+        amount:
+          minimum: 0
+          exclusiveMinimum: false
+          type: number
+        balanceAfterMovement:
+          minimum: 0
+          exclusiveMinimum: false
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        description:
+          maxLength: 255
+          minLength: 0
+          type: string
+    BankAccountDTO:
+      required:
+        - accountType
+        - customerId
+      type: object
+      properties:
+        id:
+          type: string
+        accountType:
+          pattern: ^(saving|checking|fixed)$
+          type: string
+        customerId:
+          type: string
+        balance:
+          minimum: 0
+          type: number
+        maxMonthlyTrans:
+          minimum: 0
+          type: integer
+          format: int32
+        maintenanceFee:
+          type: number
+        allowedDayOperation:
+          maximum: 31
+          minimum: 1
+          type: integer
+          format: int32
+        withdrawAmountMax:
+          type: number
+        lstSigners:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        lstHolders:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        lstTransactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountTransactions'
+    BankAccount:
+      required:
+        - accountType
+        - customerId
+      type: object
+      properties:
+        id:
+          type: string
+        accountType:
+          pattern: ^(saving|checking|fixed)$
+          type: string
+        customerId:
+          type: string
+        balance:
+          minimum: 0
+          type: number
+        maxMonthlyTrans:
+          minimum: 0
+          type: integer
+          format: int32
+        maintenanceFee:
+          type: number
+        allowedDayOperation:
+          type: integer
+          format: int32
+        withdrawAmountMax:
+          type: number
+        lstSigners:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        lstHolders:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        lstTransactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountTransactions'
+    TransferResponse:
+      type: object
+      properties:
+        fromAccount:
+          type: string
+        toAccount:
+          type: string
+        amount:
+          type: number

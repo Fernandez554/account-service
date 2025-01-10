@@ -5,6 +5,7 @@ import com.nttbank.microservices.accountservice.action.IOpenable;
 import com.nttbank.microservices.accountservice.action.IWithdrawable;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
 import com.nttbank.microservices.accountservice.util.AccountUtils;
+import com.nttbank.microservices.accountservice.util.Constants;
 import java.math.BigDecimal;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -27,14 +28,18 @@ public class SavingsAccount extends BankAccount implements IOpenable, IWithdrawa
    */
   public SavingsAccount(BankAccount account) {
     super(account.getId(), account.getAccountType(), account.getCustomerId(), account.getBalance(),
-        account.getMaxMonthlyTrans(), account.getMaintenanceFee(),
+        account.getMaxMonthlyTrans(), account.getMaintenanceFee(), account.getTransactionFee(),
         account.getAllowedDayOperation(), account.getWithdrawAmountMax(), account.getLstSigners(),
-        account.getLstHolders(), account.getCreationDate());
+        account.getLstHolders(), account.getCreatedAt(), account.getUpdatedAt(),
+        account.getMonthlyTransactionSummary(), account.getLstTransactions());
   }
 
   @Override
   public void openAccount(Long numAccounts, String customerType) {
-    //TODO: validar que tenga seteado MaxMonthlyTrans
+    if (null == this.getMaxMonthlyTrans()) {
+      throw new IllegalArgumentException(
+          Constants.MAX_MONTHLY_TRANS_REQUIRED);
+    }
     AccountUtils.defaultOpenAccountValidationMethod(numAccounts, customerType,
         AccountUtils.businessAccountLimits, this.getAccountType());
   }
