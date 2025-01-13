@@ -32,7 +32,7 @@ public class CheckingAccount extends BankAccount implements IOpenable, IWithdraw
         account.getMaxMonthlyTrans(), account.getMaintenanceFee(), account.getTransactionFee(),
         account.getAllowedDayOperation(), account.getWithdrawAmountMax(), account.getLstSigners(),
         account.getLstHolders(), account.getCreatedAt(), account.getUpdatedAt(),
-        account.getMonthlyTransactionSummary(), account.getLstTransactions(), account.getStatus());
+        account.getMonthlyTransactionSummary(), account.getStatus());
   }
 
   @Override

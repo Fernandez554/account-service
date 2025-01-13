@@ -67,7 +67,6 @@ public class AccountUtils {
           String.format(Constants.MAX_TRANSACTION_LIMIT_EXCEEDED_ERROR, dayToValidate, accountId));
     }
 
-
   }
 
   public static final Map<String, Long> personalAccountLimit = Map.of("personal", Constants.ONE);
@@ -90,8 +89,7 @@ public class AccountUtils {
     actualBalance = actualBalance.subtract(amount).setScale(2, RoundingMode.HALF_UP);
 
     if (actualBalance.compareTo(BigDecimal.ZERO) < 0) {
-      throw new IllegalArgumentException(
-          String.format(Constants.NO_WITHDRAW_FUNDS_AVAILABLE, accountId));
+      throw new IllegalArgumentException(Constants.NO_WITHDRAW_FUNDS_AVAILABLE);
     }
     return actualBalance;
   }

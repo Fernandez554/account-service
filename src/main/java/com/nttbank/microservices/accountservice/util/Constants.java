@@ -28,7 +28,7 @@ public class Constants {
   public static final String OPENING_ACCOUNT_RESTRICTION =
       "Customer is restricted from opening a new account of type %s";
   public static final String NO_WITHDRAW_FUNDS_AVAILABLE =
-      "Account balance %s doesn't have the enough funds to cover the withdraw";
+      "Sender Account doesn't have the enough funds to cover the operation";
   public static final String MAX_MONTHLY_TRANS_REQUIRED =
       "Max monthly transactions must be set for this account type";
   public static final String MAINTENANCE_FEE_REQUIRED =

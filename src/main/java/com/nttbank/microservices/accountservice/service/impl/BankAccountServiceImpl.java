@@ -11,7 +11,6 @@ import com.nttbank.microservices.accountservice.model.entity.MonthlyTransactionS
 import com.nttbank.microservices.accountservice.model.entity.TransactionType;
 import com.nttbank.microservices.accountservice.model.response.CommissionsReportResponse;
 import com.nttbank.microservices.accountservice.model.response.CustomerResponse;
-import com.nttbank.microservices.accountservice.model.response.TransferResponse;
 import com.nttbank.microservices.accountservice.repo.IAccountTransactionRepo;
 import com.nttbank.microservices.accountservice.repo.IBankAccountRepo;
 import com.nttbank.microservices.accountservice.service.BankAccountService;
@@ -108,14 +107,7 @@ public class BankAccountServiceImpl implements BankAccountService {
 
   @Override
   public Mono<BankAccount> findById(String accountId) {
-    return accountRepo.findById(accountId).flatMap(bankAccount ->
-        transactionRepo.findAllByAccountId(accountId)
-            .collectList()
-            .map(transactions -> {
-              bankAccount.setLstTransactions(transactions);
-              return bankAccount;
-            })
-    );
+    return accountRepo.findById(accountId);
   }
 
   @Override
@@ -152,7 +144,7 @@ public class BankAccountServiceImpl implements BankAccountService {
         })
         .as(transactionalOperator::transactional)
         .onErrorResume(e -> {
-          return Mono.error(new IllegalStateException("Withdraw failed: " + e.getMessage(), e));
+          return Mono.error(new IllegalStateException(e.getMessage(), e));
         });
   }
 
@@ -182,7 +174,7 @@ public class BankAccountServiceImpl implements BankAccountService {
               new IllegalStateException("You cannot deposit to this account: " + b.getId()));
         })
         .onErrorResume(e -> {
-          return Mono.error(new IllegalStateException("Deposit failed: " + e.getMessage(), e));
+          return Mono.error(new IllegalStateException(e.getMessage(), e));
         });
   }
 
@@ -255,16 +247,15 @@ public class BankAccountServiceImpl implements BankAccountService {
   }
 
   @Override
-  public Mono<TransferResponse> transfer(String fromAccountId, String toAccountId,
+  public Mono<AccountTransactions> transfer(String fromAccountId, String toAccountId,
       BigDecimal amount) {
     log.info("Initiating the transfer process.");
     return withdraw(fromAccountId, amount)
-        .flatMap(fromAccount -> deposit(toAccountId, amount).map(
-            toAccount -> new TransferResponse(fromAccountId, toAccountId,
-                amount.setScale(2, RoundingMode.HALF_UP), LocalDateTime.now())))
+        .flatMap(withdrawVoucher -> deposit(toAccountId, amount)
+            .thenReturn(withdrawVoucher))
         .onErrorResume(
             e -> Mono.error(
-                new IllegalStateException("Transfer failed: " + e.getMessage(), e)));
+                new IllegalStateException(e.getMessage(), e)));
   }
 
   @Override

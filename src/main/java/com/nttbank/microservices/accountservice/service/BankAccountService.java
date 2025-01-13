@@ -30,7 +30,7 @@ public interface BankAccountService {
 
   Mono<AccountTransactions> deposit(String accountId, BigDecimal amount);
 
-  Mono<TransferResponse> transfer(String fromAccountId, String toAccountId, BigDecimal amount);
+  Mono<AccountTransactions> transfer(String fromAccountId, String toAccountId, BigDecimal amount);
 
   Mono<BankAccount> saveSigner(String accountId, String signerId);
 

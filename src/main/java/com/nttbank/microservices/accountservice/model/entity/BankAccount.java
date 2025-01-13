@@ -17,6 +17,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
@@ -77,8 +78,6 @@ public class BankAccount {
   private LocalDateTime updatedAt = LocalDateTime.now();
 
   private MonthlyTransactionSummary monthlyTransactionSummary;
-
-  private List<AccountTransactions> lstTransactions;
 
   @Builder.Default
   private AccountStatus status = AccountStatus.active;

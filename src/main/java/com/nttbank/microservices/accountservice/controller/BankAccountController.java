@@ -5,7 +5,6 @@ import com.nttbank.microservices.accountservice.mapper.BankAccountMapper;
 import com.nttbank.microservices.accountservice.model.entity.AccountTransactions;
 import com.nttbank.microservices.accountservice.model.entity.BankAccount;
 import com.nttbank.microservices.accountservice.model.response.CommissionsReportResponse;
-import com.nttbank.microservices.accountservice.model.response.TransferResponse;
 import com.nttbank.microservices.accountservice.service.BankAccountService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -59,7 +58,7 @@ public class BankAccountController {
    * Retrieves all bank accounts.
    *
    * @return a {@link Mono} containing a {@link ResponseEntity} with a {@link Flux} of all
-   * {@link BankAccount}.
+   *     {@link BankAccount}.
    */
   @Operation(summary = "Retrieve all bank accounts",
       description = "Fetches a list of all bank accounts.")
@@ -82,7 +81,7 @@ public class BankAccountController {
    * @param bankAccountDTO the bank account to create.
    * @param req            the HTTP request to generate the location URI.
    * @return a {@link Mono} containing a {@link ResponseEntity} with the created
-   * {@link BankAccount}.
+   *     {@link BankAccount}.
    */
   @Operation(summary = "Create a new bank account",
       description = "Adds a new bank account.")
@@ -106,7 +105,7 @@ public class BankAccountController {
    *
    * @param id the ID of the account to delete.
    * @return a {@link Mono} containing a {@link ResponseEntity} with status code 204 if successful,
-   * or 404 if not found.
+   *     or 404 if not found.
    */
   @Operation(summary = "Delete a bank account",
       description = "Deletes a bank account using its ID.")
@@ -244,7 +243,7 @@ public class BankAccountController {
    * @param fromAccountId the ID of the account to transfer from.
    * @param toAccountId   the ID of the account to transfer to.
    * @param amount        the amount to transfer.
-   * @return a {@link Mono} containing a {@link ResponseEntity} with a {@link TransferResponse}.
+   * @return a {@link Mono} containing a {@link ResponseEntity} with a {@link AccountTransactions}.
    */
   @Operation(summary = "Transfer between accounts",
       description = "Transfers an amount from one account to another.")
@@ -254,7 +253,7 @@ public class BankAccountController {
       @ApiResponse(responseCode = "404", description = "Account not found")
   })
   @PostMapping("/{from_account_id}/{to_account_id}/transfer")
-  public Mono<ResponseEntity<TransferResponse>> transfer(
+  public Mono<ResponseEntity<AccountTransactions>> transfer(
       @PathVariable("from_account_id") String fromAccountId,
       @PathVariable("to_account_id") String toAccountId,
       @RequestParam("amount")
